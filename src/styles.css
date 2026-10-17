@@ -705,7 +705,7 @@ section h2 {
   position: relative;
   z-index: 2;
   width: 65%;
-  margin-top: 14%;
+  margin-top: 9%;
 }
 .studio-copy > small {
   font-size: 4px;
@@ -715,15 +715,15 @@ section h2 {
 .studio-copy h3 {
   font-family: Georgia, serif;
   font-weight: 400;
-  font-size: clamp(22px, 2.2vw, 33px);
-  line-height: 1.08;
-  letter-spacing: -0.8px;
+  font-size: clamp(14px, 1.4vw, 20px);
+  line-height: 1.14;
+  letter-spacing: -0.4px;
   margin: 8px 0;
 }
 .studio-copy p {
   font-size: 5px;
   color: #afbca6;
-  margin-bottom: 13px;
+  margin-bottom: 7px;
 }
 .studio-copy > span {
   display: inline-flex;
@@ -737,8 +737,8 @@ section h2 {
 .studio-arch {
   position: absolute;
   height: 70%;
-  width: 40%;
-  right: 7%;
+  width: 37%;
+  right: 5%;
   bottom: 10%;
   border-radius: 100px 100px 0 0;
   background: linear-gradient(130deg, #d3cdb5, #b7a587);
@@ -1159,6 +1159,255 @@ section h2 {
   height: 32px;
   background: linear-gradient(90deg, #a0785d, #bf9679);
   border-radius: 4px 4px 10px 10px;
+}
+.mini-invitation {
+  background: #eae5d8;
+  color: #3c4034;
+  container-type: inline-size;
+  display: flex;
+}
+.mini-invitation-frame {
+  flex: 1;
+  margin: 5cqw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4cqw 4cqw 3cqw;
+  background: #faf7ee;
+  border: 1px solid #d8d2c1;
+  box-shadow:
+    0 0 0 0.6cqw #faf7ee,
+    0 0 0 0.8cqw #d8d2c1;
+}
+.mini-invitation-frame > small {
+  font-size: 1.3cqw;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #7c806f;
+}
+.mini-invitation-frame h3 {
+  margin: 3.2cqw 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 6.4cqw;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.mini-invitation-frame h3 em {
+  font-style: italic;
+  color: #6d7a5c;
+}
+.mini-invitation-date {
+  margin-top: 2.6cqw;
+  font-size: 1.5cqw;
+  letter-spacing: 0.24em;
+  color: #3c4034;
+}
+.mini-invitation-frame p {
+  margin: 1cqw 0 0;
+  font-size: 1.3cqw;
+  letter-spacing: 0.05em;
+  color: #7c806f;
+}
+.mini-invitation-cta {
+  margin-top: 3.4cqw;
+  padding: 1.4cqw 3.4cqw;
+  font-size: 1.3cqw;
+  letter-spacing: 0.06em;
+  color: #f6f3e9;
+  background: #4e5a45;
+}
+.mini-invitation-frame footer {
+  margin-top: 3.2cqw;
+  padding-top: 1.8cqw;
+  width: 46%;
+  border-top: 1px solid #d8d2c1;
+  font-size: 1.15cqw;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a8d7c;
+}
+.mini-pos {
+  background: #eef0ea;
+  color: #26332c;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+}
+.mini-pos header {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  padding: 2.2cqw 3cqw;
+  background: #fff;
+  border-bottom: 1px solid #dfe3d8;
+  font-size: 1.25cqw;
+  color: #6a756c;
+}
+.mini-pos header > b {
+  font-size: 2.9cqw;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: #1f2c25;
+}
+.mini-pos header > b span {
+  font-weight: 400;
+  color: #6a756c;
+}
+.mini-pos header > small {
+  font-size: 1.25cqw;
+  color: #6a756c;
+}
+.mini-pos-clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: #46524a;
+}
+.mini-pos-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 2cqw;
+  padding: 2.5cqw 3cqw;
+}
+.mini-pos-catalog {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8cqw;
+}
+.mini-pos-search {
+  height: 4.2cqw;
+  display: flex;
+  align-items: center;
+  padding: 0 1.8cqw;
+  font-size: 1.15cqw;
+  color: #7c867d;
+  background: #fff;
+  border: 1px solid #e0e4d9;
+  border-radius: 0.9cqw;
+}
+.mini-pos-items {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.6cqw;
+}
+.mini-pos-item {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5cqw;
+  background: #fff;
+  border: 1px solid #e2e5da;
+  border-radius: 1cqw;
+}
+.mini-pos-item i {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  border-radius: 0.7cqw;
+  background: #e3e7d9;
+  position: relative;
+}
+.mini-pos-item i:after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3.2cqw;
+  height: 3.2cqw;
+  margin: -1.6cqw 0 0 -1.6cqw;
+  border-radius: 50%;
+  background: #ffffff66;
+  box-shadow: 0 0 0 0.5cqw #ffffff33;
+}
+.mini-pos-item.tone-1 i {
+  background: #e8ddca;
+}
+.mini-pos-item.tone-2 i {
+  background: #dde8e9;
+}
+.mini-pos-item.tone-3 i {
+  background: #e9e3d9;
+}
+.mini-pos-item small {
+  margin-top: 1.3cqw;
+  font-size: 1.5cqw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #33413a;
+}
+.mini-pos-item b {
+  margin-top: 0.4cqw;
+  font-size: 1.2cqw;
+  font-weight: 400;
+  color: #6d786e;
+}
+.mini-pos-cart {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5cqw;
+  padding: 2cqw;
+  background: #fff;
+  border: 1px solid #dfe3d8;
+  border-radius: 1cqw;
+}
+.mini-pos-cart > b {
+  font-size: 1.8cqw;
+  font-weight: 600;
+  color: #1f2c25;
+}
+.mini-pos-cart > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1cqw;
+  font-size: 1.3cqw;
+  color: #5d685f;
+}
+.mini-pos-cart > div small {
+  font-size: 1.3cqw;
+  font-variant-numeric: tabular-nums;
+  color: #46524a;
+}
+.mini-pos-meta {
+  padding-top: 1.2cqw;
+}
+.mini-pos-meta small {
+  font-size: 1.2cqw !important;
+  color: #6d786e !important;
+}
+.mini-pos-total {
+  margin-top: auto;
+  padding-top: 1.6cqw;
+  border-top: 1px solid #e2e5da;
+  align-items: baseline;
+}
+.mini-pos-total small {
+  font-size: 1.2cqw !important;
+  color: #6a756c !important;
+}
+.mini-pos-total b {
+  font-size: 2.3cqw;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1f2c25;
+}
+.mini-pos-pay {
+  display: block;
+  text-align: center;
+  padding: 1.2cqw 0;
+  font-size: 1.5cqw;
+  font-weight: 500;
+  color: #fff;
+  background: #213f33;
+  border-radius: 0.8cqw;
 }
 .mini-portfolio {
   background: #f1f0e9;
@@ -5913,14 +6162,15 @@ section h2 {
 }
 /* The studio illustration is drawn with fixed px type designed for a wide
    preview. In the dashboard the cards are narrower, so the headline follows the
-   container instead of overflowing into the paragraph below it. */
+   container instead of overflowing into the paragraph below it. The studio
+   headline is a fixed three-line phrase, so the clamp must allow three lines. */
 .dashboard-page .template-preview {
   container-type: inline-size;
 }
 .dashboard-page .dashboard-template-grid .studio-copy h3,
 .dashboard-page .dashboard-project-grid .studio-copy h3 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: clamp(12px, 6.6cqw, 30px);
