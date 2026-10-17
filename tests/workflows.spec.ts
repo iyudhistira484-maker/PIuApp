@@ -10,7 +10,7 @@ test("landing → prompt → authenticated API → workspace → AI review → r
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Bangun sesuatu",
+    "Bangun aplikasi",
   );
   await page
     .getByPlaceholder("Minta PiwuApp membuat aplikasi tentang…")
@@ -128,7 +128,7 @@ test("Plan and Ask do not modify project files", async ({ page }) => {
       .first(),
   ).toBeVisible();
   const before = await files();
-  await page.getByLabel("Mode AI", { exact: true }).selectOption("Plan");
+  await page.getByLabel("Mode kerja", { exact: true }).selectOption("Plan");
   await page.getByLabel("Pesan untuk AI").fill("Buat rencana toko buku");
   await page.getByRole("button", { name: "Kirim pesan", exact: true }).click();
   await expect(page.locator(".plan-panel")).toBeVisible({ timeout: 15000 });
@@ -138,7 +138,7 @@ test("Plan and Ask do not modify project files", async ({ page }) => {
       .getByRole("button", { name: "Penyimpanan: Tersinkron ke cloud" })
       .first(),
   ).toBeVisible();
-  await page.getByLabel("Mode AI", { exact: true }).selectOption("Ask");
+  await page.getByLabel("Mode kerja", { exact: true }).selectOption("Ask");
   await page.getByLabel("Pesan untuk AI").fill("Jelaskan struktur project");
   await page.getByRole("button", { name: "Kirim pesan", exact: true }).click();
   await expect(

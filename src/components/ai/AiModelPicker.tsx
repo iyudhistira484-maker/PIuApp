@@ -1,12 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  Check,
-  ChevronUp,
-  Loader2,
-  RefreshCw,
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { Check, ChevronUp, Loader2, RefreshCw, Search } from "lucide-react";
 import {
   AI_TIERS,
   TIER_INFO,
@@ -209,7 +202,6 @@ export default function AiModelPicker({
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <Sparkles size={10} />
         <span>{value}</span>
         <em className="ai-model-price">{priceLabel(value)}</em>
         {value !== "Otomatis" &&

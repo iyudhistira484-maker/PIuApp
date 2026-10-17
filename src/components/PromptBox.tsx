@@ -8,7 +8,6 @@ import {
   ListChecks,
   Paperclip,
   X,
-  Sparkles,
 } from "lucide-react";
 import { useStore } from "../lib/store";
 type Props = {

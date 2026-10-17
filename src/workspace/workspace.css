@@ -714,13 +714,6 @@
   align-items: center;
   gap: 9px;
 }
-.ai-online {
-  width: 4px;
-  height: 4px;
-  background: var(--ide-success-bg, #7eaa8f);
-  border-radius: 50%;
-  box-shadow: 0 0 5px #8eb99944;
-}
 .chat-tabs {
   display: flex;
   padding: 10px 13px 0;
@@ -773,10 +766,6 @@
 .chat-welcome {
   padding: 39px 6px;
   text-align: left;
-}
-.welcome-symbol {
-  font-size: 37px;
-  color: var(--ide-success, #a5bda7);
 }
 .chat-welcome h2 {
   font-size: 22px;

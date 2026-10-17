@@ -60,7 +60,7 @@ import {
   Plug,
   GitBranch,
   Settings,
-  Crown,
+  CreditCard,
   Monitor,
   Tablet,
   Smartphone,
@@ -71,7 +71,8 @@ import {
   PanelBottom,
   PanelLeftClose,
   PanelRightClose,
-  Sparkles,
+  Wrench,
+  PenLine,
   Check,
   Copy,
   Undo2,
@@ -1281,9 +1282,9 @@ function WorkspaceContent({ project }: { project: Project }) {
           </button>
           <button
             className="ws-icon"
-            aria-label="Tampilkan atau sembunyikan panel AI"
+            aria-label="Tampilkan atau sembunyikan panel asisten"
             aria-pressed={right}
-            title="Panel AI"
+            title="Panel asisten"
             onClick={() => setRight(!right)}
           >
             <PanelRight size={16} />
@@ -1363,7 +1364,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                 aria-label="Paket dan kredit"
                 onClick={() => setDialog("credits")}
               >
-                <Crown size={18} />
+                <CreditCard size={18} />
               </button>
             </div>
           </nav>
@@ -1677,7 +1678,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                           setRail("files");
                         }}
                       >
-                        Preview hasil AI
+                        Preview hasil
                       </button>
                       <button
                         onClick={() => {
@@ -1996,8 +1997,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                             )
                           }
                         >
-                          <Sparkles size={13} />
-                          Perbaiki dengan AI
+                          <Wrench size={13} />
+                          Minta perbaikan
                         </button>
                         <button
                           className="ws-button"
@@ -2089,12 +2090,8 @@ function WorkspaceContent({ project }: { project: Project }) {
             />
             <aside className="ws-chat">
               <div className="chat-heading">
-                <span>
-                  <Sparkles size={16} />
-                  Asisten Piwu
-                </span>
+                <span>Asisten Piwu</span>
                 <div>
-                  <span className="ai-online" />
                   <button
                     className="ws-icon"
                     title="Sembunyikan chat"
@@ -2175,8 +2172,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                       inputRef.current?.focus();
                     }}
                   >
-                    <Sparkles size={13} />
-                    Ubah dengan AI
+                    <MessageSquare size={13} />
+                    Ubah lewat percakapan
                   </button>
                 </div>
               ) : (
@@ -2298,11 +2295,11 @@ function WorkspaceContent({ project }: { project: Project }) {
                       <>
                         {project.messages.length === 0 && (
                           <div className="chat-welcome">
-                            <span className="welcome-symbol">✳</span>
-                            <h2>Dari ide, jadi nyata.</h2>
+                            <h2>Belum ada percakapan.</h2>
                             <p>
-                              Workspace Anda siap. Apa yang ingin kita bangun
-                              hari ini?
+                              Tulis kebutuhan Anda di bawah. PiwuApp menyusun
+                              perubahan sebagai tinjauan file sebelum
+                              diterapkan.
                             </p>
                             <div className="welcome-memory">
                               <FileText size={15} />
@@ -2322,10 +2319,18 @@ function WorkspaceContent({ project }: { project: Project }) {
                           <div className={"chat-message " + m.role} key={m.id}>
                             {m.role === "assistant" ? (
                               <div className="message-author">
-                                <span>✳</span>PiwuApp{" "}
-                                <small title="Model yang menjawab">
-                                  {m.model || "AI"}
-                                </small>
+                                <span
+                                  className="assistant-mark"
+                                  aria-hidden="true"
+                                >
+                                  P
+                                </span>
+                                PiwuApp{" "}
+                                {m.model && m.model !== "AI" && (
+                                  <small title="Model yang menjawab">
+                                    {m.model}
+                                  </small>
+                                )}
                               </div>
                             ) : (
                               <div className="message-author">
@@ -2366,7 +2371,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                               <div className="ai-file-list">
                                 <span>
                                   <CheckCheck size={12} />
-                                  Tindakan AI · {m.files.length} file
+                                  Perubahan · {m.files.length} file
                                 </span>
                                 {m.files.map((f) => (
                                   <button key={f} onClick={() => openFile(f)}>
@@ -2692,7 +2697,13 @@ function WorkspaceContent({ project }: { project: Project }) {
                         {busy && (
                           <div className="chat-message assistant streaming">
                             <div className="message-author">
-                              <span>✳</span>PiwuApp{" "}
+                              <span
+                                className="assistant-mark"
+                                aria-hidden="true"
+                              >
+                                P
+                              </span>
+                              PiwuApp{" "}
                               <LoaderCircle className="spin" size={11} />
                             </div>
                             <p>
@@ -2991,8 +3002,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                           />
                           <button
                             className="ws-icon"
-                            title="Perjelas prompt"
-                            aria-label="Perjelas prompt"
+                            title="Rapikan prompt"
+                            aria-label="Rapikan prompt"
                             disabled={!input.trim()}
                             onClick={() =>
                               setInput(
@@ -3001,7 +3012,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                               )
                             }
                           >
-                            <Sparkles size={13} />
+                            <PenLine size={13} />
                           </button>
                           <button
                             className="ws-icon"
@@ -3042,13 +3053,13 @@ function WorkspaceContent({ project }: { project: Project }) {
                         </div>
                         <div>
                           <select
-                            aria-label="Mode AI"
+                            aria-label="Mode kerja"
                             value={mode}
                             onChange={(e) => setMode(e.target.value as Mode)}
                           >
-                            <option>Builder</option>
-                            <option>Plan</option>
-                            <option>Ask</option>
+                            <option value="Builder">Bangun</option>
+                            <option value="Plan">Rencana</option>
+                            <option value="Ask">Tanya</option>
                           </select>
                           {busy ? (
                             <button
@@ -3213,8 +3224,8 @@ function WorkspaceContent({ project }: { project: Project }) {
             Terminal
           </button>
           <button onClick={() => setRight(!right)}>
-            <Sparkles size={11} />
-            AI
+            <MessageSquare size={11} />
+            Asisten
           </button>
           <button
             onClick={() => (focus ? setFocus(false) : setDialog("commands"))}
@@ -3723,8 +3734,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                             void send(c.body);
                           }}
                         >
-                          <Sparkles size={12} />
-                          Task untuk AI
+                          <ArrowUpRight size={12} />
+                          Kirim sebagai tugas
                         </button>
                       </div>
                     </div>
@@ -3774,7 +3785,4 @@ function WorkspaceContent({ project }: { project: Project }) {
       )}
     </div>
   );
-}
-function UsersIcon() {
-  return <span style={{ fontSize: 23 }}>↗</span>;
 }

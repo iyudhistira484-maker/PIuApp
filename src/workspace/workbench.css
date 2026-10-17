@@ -489,10 +489,6 @@
   width: 14px;
   color: var(--ide-muted, #b4b4b4);
 }
-.workspace .ai-online {
-  background: var(--ide-success-bg, #8bb991);
-  box-shadow: none;
-}
 .workspace .chat-tabs {
   padding: 0 15px;
   gap: 22px;
@@ -526,10 +522,6 @@
 }
 .workspace .chat-welcome {
   padding: 32px 0;
-}
-.workspace .welcome-symbol {
-  font-size: 30px;
-  color: var(--ide-muted, #bbb);
 }
 .workspace .chat-welcome h2 {
   font-size: 21px;
@@ -573,8 +565,19 @@
   color: var(--ide-text, #e0e0e0);
   gap: 9px;
 }
-.workspace .message-author > span:first-child {
-  color: var(--ide-text, #b9c9bf);
+.workspace .message-author > span.assistant-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--ide-border, #405060);
+  border-radius: 3px;
+  background: var(--ide-raised, #222b34);
+  color: var(--ide-muted, #a8b6c4);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
 }
 .workspace .message-author > span.user-message-avatar {
   border-radius: 3px;
@@ -584,7 +587,7 @@
 }
 .workspace .message-author > small,
 .workspace .chat-message.user .message-author > small {
-  font-size: 8px;
+  font-size: 10px;
   border: 1px solid var(--ide-border, #404040);
   background: var(--ide-bg, #272727);
   color: var(--ide-muted, #aaa);
