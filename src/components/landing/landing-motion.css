@@ -1,83 +1,68 @@
-/* Landing motion layer. Scoped to .landing so dashboard, workspace, auth and
-   admin surfaces keep their current behaviour. Everything here is decoration:
-   content is only hidden once JavaScript opts in through html.js-reveal, and
-   the reduced-motion blocks at the bottom of this file stay in charge. */
-.landing {
-  --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --motion-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --sheen-light: #ffffff3d;
-}
+/* Landing motion layer. Decoration only: without the js-reveal class the page
+   renders its final state, and reduced motion skips every transform. */
 
-/* -------------------------------------------------------------------------
-   1. Scroll reveal
-   The observer adds .is-revealed as a block enters the viewport, then
-   .is-settled so a finished entrance never holds back later hover motion.
-   ------------------------------------------------------------------------- */
 html.js-reveal .landing [data-reveal] {
   opacity: 0;
 }
+
 html.js-reveal .landing [data-reveal].is-revealed {
-  animation: landing-rise 680ms var(--motion-out) both;
+  animation: landing-fade 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: var(--reveal-delay, 0ms);
 }
-html.js-reveal .landing [data-reveal="fade"].is-revealed {
-  animation-name: landing-fade;
-}
-html.js-reveal .landing [data-reveal="scale"].is-revealed {
-  animation-name: landing-rise-scale;
-}
+
 html.js-reveal .landing [data-reveal].is-settled {
   opacity: 1;
   animation: none;
 }
-/* Lists rise one item after another inside their revealed container. */
+
 html.js-reveal .landing [data-reveal][data-stagger] > * {
   opacity: 0;
 }
+
 html.js-reveal .landing [data-reveal][data-stagger].is-revealed > * {
-  animation: landing-rise 640ms var(--motion-out) both;
+  animation: landing-fade 420ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
+
 html.js-reveal
   .landing
   [data-reveal][data-stagger].is-revealed
   > :nth-child(1) {
-  animation-delay: 70ms;
+  animation-delay: 40ms;
 }
+
 html.js-reveal
   .landing
   [data-reveal][data-stagger].is-revealed
   > :nth-child(2) {
-  animation-delay: 140ms;
+  animation-delay: 90ms;
 }
+
 html.js-reveal
   .landing
   [data-reveal][data-stagger].is-revealed
   > :nth-child(3) {
-  animation-delay: 210ms;
+  animation-delay: 140ms;
 }
+
 html.js-reveal
   .landing
   [data-reveal][data-stagger].is-revealed
   > :nth-child(4) {
-  animation-delay: 280ms;
+  animation-delay: 190ms;
 }
+
 html.js-reveal
   .landing
   [data-reveal][data-stagger].is-revealed
-  > :nth-child(5) {
-  animation-delay: 350ms;
+  > :nth-child(n + 5) {
+  animation-delay: 230ms;
 }
-html.js-reveal
-  .landing
-  [data-reveal][data-stagger].is-revealed
-  > :nth-child(n + 6) {
-  animation-delay: 350ms;
-}
+
 html.js-reveal .landing [data-reveal][data-stagger].is-settled > * {
   opacity: 1;
   animation: none;
 }
+
 @keyframes landing-fade {
   from {
     opacity: 0;
@@ -86,746 +71,28 @@ html.js-reveal .landing [data-reveal][data-stagger].is-settled > * {
     opacity: 1;
   }
 }
-@keyframes landing-rise {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 22px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes landing-rise-scale {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 16px, 0) scale(0.974);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* The small eyebrow square spins into place with its heading. */
-html.js-reveal .landing [data-reveal].is-revealed .eyebrow-label > span {
-  animation: landing-dot 560ms var(--motion-out) 140ms both;
-}
-@keyframes landing-dot {
-  from {
-    opacity: 0;
-    transform: scale(0.25) rotate(-45deg);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 
-/* -------------------------------------------------------------------------
-   2. Hero entrance (load sequence, above the fold)
-   ------------------------------------------------------------------------- */
-.landing .hero-content > * {
-  animation: landing-rise 880ms var(--motion-out) both;
-}
-.landing .hero-content > :nth-child(1) {
-  animation-delay: 60ms;
-}
-.landing .hero-content > :nth-child(2) {
-  animation-delay: 150ms;
-}
-.landing .hero-content > :nth-child(3) {
-  animation-delay: 240ms;
-}
-.landing .hero-content > :nth-child(4) {
-  animation-delay: 330ms;
-}
-.landing .hero-content > :nth-child(5) {
-  animation-delay: 430ms;
-}
-.landing .hero-content > :nth-child(n + 6) {
-  animation-delay: 520ms;
-}
-.landing .hero-bottom {
-  animation: landing-fade 820ms ease-out 520ms both;
-}
-/* Hand-drawn underline draws itself under the product name. Both paths use
-   pathLength="1", so a dash of 1 always matches the real stroke length. */
-.landing .hero-word svg path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: landing-draw 900ms var(--motion-in-out) 720ms forwards;
-}
-@keyframes landing-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/* -------------------------------------------------------------------------
-   3. Ambient life (slow, always-on, decorative)
-   ------------------------------------------------------------------------- */
-.landing .hero-gradient {
-  animation: landing-aurora 22s var(--motion-in-out) infinite alternate;
-}
-@keyframes landing-aurora {
-  from {
-    opacity: 0.54;
-    transform: translate3d(-2%, 1%, 0) scale(1);
-  }
-  to {
-    opacity: 0.72;
-    transform: translate3d(3%, -2%, 0) scale(1.08);
-  }
-}
-/* Spotlight that follows the pointer across the hero video. It is positioned
-   by transform only, so following the cursor never triggers layout. */
-.landing .hero-content::before {
-  position: absolute;
-  z-index: -1;
-  top: 40%;
-  left: 50%;
-  width: 640px;
-  height: 640px;
-  content: "";
-  pointer-events: none;
-  border-radius: 50%;
-  opacity: 0.8;
-  background: radial-gradient(closest-side, #ffffff7a, transparent 72%);
-  filter: blur(18px);
-  transform: translate3d(
-    calc(-50% + var(--spot-x, 0px)),
-    calc(-50% + var(--spot-y, 0px)),
-    0
-  );
-}
-@media (hover: none), (pointer: coarse) {
-  .landing .hero-content::before {
-    opacity: 0.45;
-  }
-}
-/* Thin page-progress indicator for the sticky navigation. */
+/* Scroll position, written by useLandingMotion. */
 .landing-progress {
   position: fixed;
-  z-index: 30;
   top: 0;
-  right: 0;
   left: 0;
+  z-index: 70;
+  width: 100%;
   height: 2px;
-  pointer-events: none;
-  background: linear-gradient(90deg, #6f7c60, #9dacf2 62%, #d8b6e6);
+  background: #213f33;
   transform: scaleX(var(--landing-progress, 0));
-  transform-origin: left center;
-}
-/* The badge breathes with box-shadow only, so its box never moves. */
-.landing .announcement .new-badge {
-  animation: landing-badge 4.6s ease-in-out infinite;
-}
-@keyframes landing-badge {
-  0%,
-  100% {
-    box-shadow: 0 1px 2px #00000005;
-  }
-  50% {
-    box-shadow:
-      0 1px 2px #00000005,
-      0 0 0 6px #8b95830f;
-  }
-}
-/* The workspace illustration floats; its skeleton lines shimmer and the
-   assistant badge pulses like a live conversation. */
-.landing .workspace-illustration {
-  animation: landing-float 11s var(--motion-in-out) infinite alternate;
-}
-@keyframes landing-float {
-  from {
-    transform: rotate(-1deg) translate3d(0, 0, 0);
-  }
-  to {
-    transform: rotate(-0.4deg) translate3d(0, -10px, 0);
-  }
-}
-.landing .skeleton-line {
-  background-image: linear-gradient(
-    100deg,
-    #323c31 20%,
-    #4d5f4f 50%,
-    #323c31 80%
-  );
-  background-size: 240% 100%;
-  animation: landing-shimmer 3.4s linear infinite;
-}
-@keyframes landing-shimmer {
-  from {
-    background-position: 180% 0;
-  }
-  to {
-    background-position: -60% 0;
-  }
-}
-.landing .ai-badge {
-  animation: landing-badge-pulse 3.4s ease-in-out infinite;
-}
-@keyframes landing-badge-pulse {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-}
-/* The closing section keeps a slow bloom drifting behind its copy. */
-.landing .cta-section {
-  isolation: isolate;
-}
-.landing .cta-section::after {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  content: "";
+  transform-origin: 0 50%;
   pointer-events: none;
-  background:
-    radial-gradient(28% 34% at 30% 32%, #ffffffb8, transparent 72%),
-    radial-gradient(24% 30% at 74% 70%, #c3d3af8c, transparent 74%);
-  filter: blur(24px);
-  animation: landing-drift 26s var(--motion-in-out) infinite alternate;
-}
-@keyframes landing-drift {
-  from {
-    transform: translate3d(-2%, 2%, 0) scale(1);
-  }
-  to {
-    transform: translate3d(2%, -2%, 0) scale(1.1);
-  }
-}
-.landing .cta-doodle {
-  animation: landing-sway 13s var(--motion-in-out) infinite alternate;
-}
-@keyframes landing-sway {
-  from {
-    transform: rotate(9deg) translate3d(0, -8px, 0);
-  }
-  to {
-    transform: rotate(19deg) translate3d(0, 10px, 0);
-  }
-}
-.landing .tiny-star {
-  animation: landing-twinkle 5.4s ease-in-out infinite;
-}
-@keyframes landing-twinkle {
-  0%,
-  100% {
-    opacity: 0.6;
-    transform: rotate(0deg);
-  }
-  50% {
-    opacity: 1;
-    transform: rotate(45deg);
-  }
 }
 
-/* -------------------------------------------------------------------------
-   4. Pointer feedback
-   ------------------------------------------------------------------------- */
-/* The composer settles a little deeper once it has focus. */
-.landing .prompt-box {
-  transition:
-    box-shadow 320ms var(--motion-ease),
-    transform 460ms var(--motion-out);
-}
-.landing .prompt-box:focus-within {
-  transform: translateY(-2px);
-}
-.landing .prompt-suggestions button {
-  transition:
-    transform 320ms var(--motion-out),
-    background-color 320ms ease,
-    border-color 320ms ease,
-    box-shadow 320ms ease,
-    color 320ms ease;
-}
-.landing .prompt-suggestions button:hover {
-  color: #3f4560;
-  box-shadow: 0 10px 24px -14px #464f7a59;
-}
-.landing .prompt-suggestions button:active {
-  transform: translateY(0) scale(0.985);
-}
-.landing .template-use {
-  transition:
-    opacity 240ms ease,
-    transform 380ms var(--motion-out),
-    box-shadow 380ms ease;
-}
-/* Sheen sweep for the primary buttons. The pseudo-element sits between the
-   surface and the label, so the text stays fully readable while it passes. */
-.landing :is(.button-dark, .button-outline, .button-danger, .landing-nav-cta) {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.landing .button-outline {
-  --sheen-light: #cfd6c1cc;
-}
-.landing
-  :is(.button-dark, .button-outline, .button-danger, .landing-nav-cta)::after {
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 45%;
-  content: "";
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    var(--sheen-light) 45%,
-    transparent
-  );
-  transform: translateX(-170%) skewX(-12deg);
-}
-.landing
-  :is(
-    .button-dark,
-    .button-outline,
-    .button-danger,
-    .landing-nav-cta
-  ):hover::after {
-  opacity: 1;
-  animation: landing-sheen 780ms var(--motion-ease);
-}
-@keyframes landing-sheen {
-  from {
-    transform: translateX(-170%) skewX(-12deg);
-  }
-  to {
-    transform: translateX(330%) skewX(-12deg);
-  }
-}
-.landing :is(.button-dark, .button-outline):hover {
-  transform: translateY(-1px);
-}
-/* Template cards: lift, zoom, sheen and a rotating arrow. */
-.landing .template-visual {
-  position: relative;
-  border-radius: 8px;
-}
-.landing .template-visual::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  pointer-events: none;
-  opacity: 0;
-  border-radius: 8px;
-  background: linear-gradient(
-    105deg,
-    transparent 34%,
-    #ffffff96 48%,
-    transparent 62%
-  );
-  transform: translateX(-40%);
-}
-.landing .template-card:hover .template-visual::after {
-  opacity: 1;
-  animation: landing-card-sheen 900ms var(--motion-ease);
-}
-@keyframes landing-card-sheen {
-  from {
-    transform: translateX(-45%);
-  }
-  to {
-    transform: translateX(45%);
-  }
-}
-.landing .template-preview {
-  transition:
-    transform 520ms var(--motion-out),
-    box-shadow 520ms ease,
-    border-color 520ms ease;
-}
-.landing .template-card:hover .template-preview {
-  border-color: #cfd6c4;
-  box-shadow: 0 18px 40px -18px #2f3a2a42;
-  transform: translateY(-4px) scale(1.014);
-}
-.landing .template-card-label h3 {
-  transition: color 300ms ease;
-}
-.landing .template-card:hover .template-card-label h3 {
-  color: #3c4433;
-}
-.landing .template-arrow {
-  transition:
-    transform 420ms var(--motion-out),
-    background-color 420ms ease,
-    border-color 420ms ease,
-    color 420ms ease;
-}
-.landing .template-card:hover .template-arrow {
-  border-color: #c7cfbb;
-  background: #f3f5ec;
-  color: #4b5540 !important;
-  transform: translate(3px, -3px);
-}
-.landing .template-card:hover .template-use {
-  box-shadow: 0 8px 20px -8px #0000002e;
-}
-/* Category tabs get a sliding underline on top of the active pill. */
-.landing .template-tabs button {
-  position: relative;
-  transition:
-    color 300ms ease,
-    background-color 300ms ease,
-    border-color 300ms ease;
-}
-.landing .template-tabs button::after {
-  position: absolute;
-  right: 12px;
-  bottom: 4px;
-  left: 12px;
-  height: 1.5px;
-  content: "";
-  border-radius: 2px;
-  opacity: 0.55;
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 420ms var(--motion-out);
-}
-.landing .template-tabs button:hover::after,
-.landing .template-tabs button.active::after {
-  transform: scaleX(1);
-}
-/* How-it-works steps: a rule draws in above the step you are reading. */
-.landing .steps-grid article {
-  position: relative;
-  transition: transform 460ms var(--motion-out);
-}
-.landing .steps-grid article::before {
-  position: absolute;
-  top: -1px;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  content: "";
-  background: linear-gradient(90deg, #7d8c68, #b7c3a2 70%, transparent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 540ms var(--motion-out);
-}
-.landing .steps-grid article:hover {
-  transform: translateY(-3px);
-}
-.landing .steps-grid article:hover::before {
-  transform: scaleX(1);
-}
-.landing .step-top > span {
-  transition:
-    color 420ms ease,
-    transform 460ms var(--motion-out);
-}
-.landing .steps-grid article:hover .step-top > span {
-  color: #6f7c60;
-  transform: translateY(-2px);
-}
-.landing .step-example {
-  transition:
-    transform 460ms var(--motion-out),
-    background-color 460ms ease,
-    border-color 460ms ease;
-}
-.landing .steps-grid article:hover .step-example {
-  border-color: #d3d8c6;
-  transform: translateY(-2px);
-}
-/* Feature rows: the icon leans in, the row eases right. */
-.landing .feature-list article {
-  transition: transform 460ms var(--motion-out);
-}
-.landing .feature-list article:hover {
-  transform: translateX(4px);
-}
-.landing .feature-icon {
-  transition:
-    transform 540ms var(--motion-out),
-    background-color 420ms ease,
-    border-color 420ms ease,
-    color 420ms ease;
-}
-.landing .feature-list article:hover .feature-icon {
-  border-color: #cdd7bd;
-  background: #dfe6d2;
-  color: #4f5f42;
-  transform: rotate(-5deg) scale(1.06);
-}
-/* Pricing cards lift; the featured plan adds a warmer halo. */
-.landing .pricing-card {
-  transition:
-    transform 480ms var(--motion-out),
-    box-shadow 480ms ease,
-    border-color 480ms ease;
-}
-.landing .pricing-card:hover {
-  border-color: #cfd6c0;
-  box-shadow: 0 24px 50px -28px #3b44334d;
-  transform: translateY(-6px);
-}
-.landing .pricing-card.featured::before {
-  position: absolute;
-  z-index: -1;
-  inset: -14px -10px -10px;
-  content: "";
-  pointer-events: none;
-  border-radius: 16px;
-  opacity: 0.5;
-  background: radial-gradient(closest-side, #a9b78d6b, transparent 76%);
-  transition: opacity 520ms ease;
-}
-.landing .pricing-card.featured:hover::before {
-  opacity: 1;
-}
-.landing .pricing-card.featured:hover {
-  box-shadow: 0 26px 56px -26px #4c5a3c73;
-}
-.landing .popular-label {
-  overflow: hidden;
-}
-.landing .popular-label::after {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 40%;
-  content: "";
-  opacity: 0;
-  background: linear-gradient(100deg, transparent, #ffffff47, transparent);
-  transform: translateX(-150%) skewX(-12deg);
-}
-.landing .pricing-card.featured:hover .popular-label::after {
-  opacity: 1;
-  animation: landing-sheen 900ms var(--motion-ease);
-}
-.landing .pricing-card .button {
-  transition:
-    transform 420ms var(--motion-out),
-    background-color 220ms ease,
-    box-shadow 320ms ease;
-}
-.landing .pricing-card:hover .button {
-  transform: translateY(-1px);
-}
-/* The first price a visitor sees still pops in. */
-.landing .price > .price-value {
-  display: inline-block;
-  margin-left: 0;
-  font-size: inherit;
-  font-weight: 500;
-  letter-spacing: inherit;
-  color: inherit;
-  font-variant-numeric: tabular-nums;
-  animation: landing-pop 460ms var(--motion-out) both;
-}
-@keyframes landing-pop {
-  from {
-    opacity: 0.2;
-    transform: translateY(7px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* Security strip, links and the FAQ. */
-.landing .security-strip > svg {
-  transition:
-    transform 620ms var(--motion-out),
-    color 480ms ease;
-}
-.landing .security-strip:hover > svg {
-  color: #5c6b4c;
-  transform: rotate(-8deg) scale(1.06);
-}
-.landing .text-link {
-  transition: color 300ms ease;
-}
-.landing .text-link > svg {
-  transition: transform 400ms var(--motion-out);
-}
-.landing .text-link:hover > svg {
-  transform: translate(3px, -3px);
-}
-.landing .faq-list article {
-  transition: border-color 360ms ease;
-}
-.landing .faq-list article:hover {
-  border-color: #c9cfb8;
-}
-.landing .faq-list button {
-  transition: color 320ms ease;
-}
-.landing .faq-list button:hover {
-  color: #2c3324;
-}
-.landing .faq-list button > svg {
-  transition:
-    transform 420ms var(--motion-out),
-    color 320ms ease;
-}
-.landing .faq-list article:hover button > svg {
-  color: #5d6a4c;
-  transform: rotate(90deg);
-}
-.landing .faq-list article > p {
-  animation: landing-answer 340ms var(--motion-out) both;
-}
-@keyframes landing-answer {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* Footer links underline as you point at them. */
-.landing .footer-top > div > a:not(.logo),
-.landing .footer-top > div > button {
-  position: relative;
-  transition: color 300ms ease;
-}
-.landing .footer-top > div > a:not(.logo)::after,
-.landing .footer-top > div > button::after {
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  content: "";
-  background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 400ms var(--motion-out);
-}
-.landing .footer-top > div > a:not(.logo):hover::after,
-.landing .footer-top > div > button:hover::after {
-  transform: scaleX(1);
-}
-
-/* -------------------------------------------------------------------------
-   5. Navigation
-   ------------------------------------------------------------------------- */
-/* Kept to transforms only: the dropdown is measured and screenshotted right
-   after opening, so it must never be translucent while it animates. */
-.landing-header .landing-nav-popover:not([hidden]) {
-  animation: landing-popover 200ms var(--motion-out) both;
-}
-@keyframes landing-popover {
-  from {
-    transform: translateY(-8px) scale(0.985);
-  }
-  to {
-    transform: none;
-  }
-}
-.landing-header .landing-nav-popover:not([hidden]) a {
-  animation: landing-link-in 320ms var(--motion-out) both;
-}
-@keyframes landing-link-in {
-  from {
-    transform: translateX(-6px);
-  }
-  to {
-    transform: none;
-  }
-}
-.landing-header .landing-nav-popover:not([hidden]) a:nth-of-type(1) {
-  animation-delay: 40ms;
-}
-.landing-header .landing-nav-popover:not([hidden]) a:nth-of-type(2) {
-  animation-delay: 80ms;
-}
-.landing-header .landing-nav-popover:not([hidden]) a:nth-of-type(3) {
-  animation-delay: 120ms;
-}
-.landing-header .landing-nav-item-icon {
-  transition:
-    transform 340ms var(--motion-out),
-    background-color 320ms ease,
-    color 320ms ease;
-}
-.landing-header .landing-nav-popover a:hover .landing-nav-item-icon {
-  background: #e5eeee;
-  color: #2f4b57;
-  transform: translateY(-1px) rotate(-4deg);
-}
-@media (max-width: 1000px) {
-  .landing-header .landing-navigation.is-open {
-    animation: landing-menu 220ms var(--motion-out) both;
-  }
-}
-@keyframes landing-menu {
-  from {
-    transform: translateY(-10px);
-  }
-  to {
-    transform: none;
-  }
-}
-
-/* -------------------------------------------------------------------------
-   6. Reduced motion and print
-   ------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  /* Nothing may stay hidden, and the underline is simply drawn rather than
-     left unwritten when the animation is switched off. */
-  html.js-reveal .landing [data-reveal],
-  html.js-reveal .landing [data-reveal].is-revealed,
-  html.js-reveal .landing [data-reveal][data-stagger] > *,
-  html.js-reveal .landing [data-reveal][data-stagger] > :nth-child(n) {
-    opacity: 1;
-    animation: none !important;
-  }
-  .landing .hero-content > *,
-  .landing .hero-bottom,
-  .landing .hero-word svg path,
-  .landing .hero-gradient,
-  .landing .announcement .new-badge,
-  .landing .workspace-illustration,
-  .landing .skeleton-line,
-  .landing .ai-badge,
-  .landing .cta-section::after,
-  .landing .cta-doodle,
-  .landing .tiny-star,
-  .landing .pricing-card.featured::before,
-  .landing .faq-list article > p,
-  .landing .price > .price-value,
-  .landing-header .landing-nav-popover:not([hidden]),
-  .landing-header .landing-nav-popover:not([hidden]) a,
-  .landing-header .landing-navigation.is-open {
-    animation: none !important;
-  }
-  .landing .hero-word svg path {
-    stroke-dashoffset: 0;
-  }
-  .landing .hero-content::before {
-    opacity: 0.45;
-  }
-  .landing-progress {
-    display: none;
-  }
-}
-@media print {
-  .landing-progress,
-  .landing .cta-section::after {
-    display: none;
-  }
   html.js-reveal .landing [data-reveal],
   html.js-reveal .landing [data-reveal][data-stagger] > * {
     opacity: 1;
+    animation: none;
+  }
+  .landing-progress {
+    display: none;
   }
 }

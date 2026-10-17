@@ -19,15 +19,13 @@ const REDUCE = "(prefers-reduced-motion: reduce)";
  *
  * The hook only
  *   1. marks reveal blocks as they scroll into view, so CSS owns the motion,
- *   2. positions the hero spotlight through --spot-x/--spot-y,
- *   3. writes --landing-progress for the thin scroll indicator.
+ *   2. writes --landing-progress for the thin scroll indicator.
  */
 export default function useLandingMotion() {
   useEffect(() => {
     const cleanups: Array<() => void> = [];
     const root = document.documentElement;
     const motion = window.matchMedia(REDUCE);
-    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
     const staticPage = motion.matches || !("IntersectionObserver" in window);
     const timers = new Set<number>();
     const later = (fn: () => void, ms: number) => {
@@ -114,40 +112,7 @@ export default function useLandingMotion() {
       cleanups.push(() => window.removeEventListener("scroll", sweep));
     }
 
-    /* --- 2. Hero spotlight ---------------------------------------------- */
-    const hero = document.querySelector<HTMLElement>(".landing .hero-section");
-    const heroContent = hero?.querySelector<HTMLElement>(".hero-content");
-    if (hero && heroContent && !staticPage && finePointer.matches) {
-      let frame = 0;
-      let nextX = 0;
-      let nextY = 0;
-      const paint = () => {
-        frame = 0;
-        hero.style.setProperty("--spot-x", `${nextX.toFixed(1)}px`);
-        hero.style.setProperty("--spot-y", `${nextY.toFixed(1)}px`);
-      };
-      const onPointerMove = (event: PointerEvent) => {
-        const rect = heroContent.getBoundingClientRect();
-        const limitX = Math.max(140, rect.width * 0.42);
-        const limitY = Math.max(140, rect.height * 0.42);
-        nextX = Math.max(
-          -limitX,
-          Math.min(limitX, event.clientX - (rect.left + rect.width / 2)),
-        );
-        nextY = Math.max(
-          -limitY,
-          Math.min(limitY, event.clientY - (rect.top + rect.height * 0.4)),
-        );
-        if (!frame) frame = window.requestAnimationFrame(paint);
-      };
-      hero.addEventListener("pointermove", onPointerMove, { passive: true });
-      cleanups.push(() => {
-        hero.removeEventListener("pointermove", onPointerMove);
-        if (frame) window.cancelAnimationFrame(frame);
-      });
-    }
-
-    /* --- 3. Scroll progress --------------------------------------------- */
+    /* --- 2. Scroll progress --------------------------------------------- */
     const progress = document.querySelector<HTMLElement>(".landing-progress");
     if (progress && !motion.matches) {
       let frame = 0;

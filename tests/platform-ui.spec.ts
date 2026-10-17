@@ -33,7 +33,7 @@ test("public settings outage does not show a persistent landing error; backgroun
   await page.goto("/");
   await (await response).finished();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Bangun sesuatu",
+    "Bangun aplikasi",
   );
   await expect(
     page.getByText("Informasi platform belum dapat dimuat."),

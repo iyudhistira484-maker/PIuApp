@@ -65,16 +65,9 @@ test("landing motion: reduced motion shows the finished page at once", async ({
   await expect(page.locator(".landing-progress")).toBeHidden();
 });
 
-test("landing motion: the hero spotlight and progress bar track input", async ({
-  page,
-}) => {
+test("landing motion: the progress bar tracks scroll", async ({ page }) => {
   await page.goto("/");
-  await page.waitForTimeout(1400);
-  await page.mouse.move(1200, 420);
-  const spotlight = await page
-    .locator(".hero-section")
-    .evaluate((el) => el.style.getPropertyValue("--spot-x"));
-  expect(Number.parseFloat(spotlight)).toBeGreaterThan(50);
+  await page.waitForTimeout(400);
   await page.evaluate(() => window.scrollTo(0, 600));
   await expect
     .poll(() =>

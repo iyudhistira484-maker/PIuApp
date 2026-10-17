@@ -19,10 +19,9 @@ test("landing navbar: sticky glass on scroll, clear at top, keyboard dropdown an
   await page.evaluate(() => window.scrollTo({ top: 640, behavior: "instant" }));
   await expect(header).toHaveClass(/is-scrolled/);
   expect((await header.boundingBox())!.y).toBe(0);
-  await expect(surface).toHaveCSS(
-    "backdrop-filter",
-    "blur(24px) saturate(1.4)",
-  );
+  await expect(header).toHaveCSS("background-color", "rgb(247, 247, 242)");
+  await expect(header).toHaveCSS("border-bottom-width", "1px");
+  await expect(surface).toHaveCSS("backdrop-filter", "none");
   await page.screenshot({ path: ".artifacts/navbar-desktop-scroll.png" });
   const solutions = page.getByRole("button", { name: "Solusi", exact: true });
   await solutions.focus();
@@ -44,7 +43,7 @@ test("landing navbar: sticky glass on scroll, clear at top, keyboard dropdown an
   await expect(page.locator(".template-grid")).toBeVisible();
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await expect(header).not.toHaveClass(/is-scrolled/);
-  await expect(surface).toHaveCSS("backdrop-filter", "none");
+  await expect(header).toHaveCSS("border-bottom-width", "0px");
   await page.locator(".landing-nav-cta").click();
   await expect(page).toHaveURL(/\/login$/);
 });

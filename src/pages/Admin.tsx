@@ -2154,7 +2154,7 @@ function SettingsForm({
             value={value.hero_title}
             disabled={disabled}
             onChange={(e) => set("hero_title", e.target.value)}
-            placeholder="Bangun sesuatu dengan PiwuApp."
+            placeholder="Bangun aplikasi yang benar-benar dipakai."
           />
         </label>
         <label>
