@@ -611,6 +611,9 @@ function WorkspaceContent({ project }: { project: Project }) {
     setError("");
   }, [project.files, refresh]);
   useEffect(() => {
+    // The empty-state welcome is taller than the pane; auto-scrolling to the
+    // end on mount would push its heading out of view.
+    if (project.messages.length === 0) return;
     chatEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [streaming, project.messages.length]);
   const send = useCallback(
@@ -2295,12 +2298,71 @@ function WorkspaceContent({ project }: { project: Project }) {
                       <>
                         {project.messages.length === 0 && (
                           <div className="chat-welcome">
-                            <h2>Belum ada percakapan.</h2>
+                            <h2>
+                              {kind === "roblox"
+                                ? "Minta asisten membangun game Anda."
+                                : kind === "mobile"
+                                  ? "Minta asisten membangun aplikasi Anda."
+                                  : "Minta asisten membangun website Anda."}
+                            </h2>
                             <p>
-                              Tulis kebutuhan Anda di bawah. PiwuApp menyusun
-                              perubahan sebagai tinjauan file sebelum
-                              diterapkan.
+                              Deskripsikan apa yang ingin dibuat atau diubah.
+                              PiwuApp menyusun rencana, menulis kode, dan
+                              mengirim hasilnya sebagai tinjauan file yang bisa
+                              Anda terima, tolak, atau kembalikan.
                             </p>
+                            <div className="welcome-suggests">
+                              {(kind === "roblox"
+                                ? [
+                                    [
+                                      "Susun struktur game",
+                                      "Peta dasar, spawn, dan alur permainan.",
+                                    ],
+                                    [
+                                      "Tambahkan rintangan",
+                                      "Checkpoint, obstacle, atau mekanisme obby.",
+                                    ],
+                                    [
+                                      "Tambahkan interaksi",
+                                      "Tombol, pintu, atau objek yang bisa dipakai.",
+                                    ],
+                                  ]
+                                : kind === "mobile"
+                                  ? [
+                                      [
+                                        "Tambahkan layar baru",
+                                        "Layar profil, pengaturan, atau halaman baru.",
+                                      ],
+                                      [
+                                        "Perbaiki navigasi",
+                                        "Rapikan alur antar-layar aplikasi.",
+                                      ],
+                                      [
+                                        "Sesuaikan tampilan",
+                                        "Warna, spasi, atau tipografi aplikasi.",
+                                      ],
+                                    ]
+                                  : [
+                                      [
+                                        "Buat halaman baru",
+                                        "Tambahkan halaman atau komponen ke website ini.",
+                                      ],
+                                      [
+                                        "Sesuaikan tampilan",
+                                        "Warna, spasi, atau tipografi halaman.",
+                                      ],
+                                      [
+                                        "Buat responsif",
+                                        "Pastikan tampilan rapi di layar kecil.",
+                                      ],
+                                    ]
+                              ).map(([title, desc]) => (
+                                <button key={title} onClick={() => send(title)}>
+                                  <b>{title}</b>
+                                  <small>{desc}</small>
+                                </button>
+                              ))}
+                            </div>
                             <div className="welcome-memory">
                               <FileText size={15} />
                               <div>
@@ -2310,8 +2372,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                               <Check size={13} />
                             </div>
                             <span className="welcome-note">
-                              Mulai dengan pesan, atau jelajahi template Anda di
-                              sebelah kiri.
+                              Mulai dengan pesan di bawah, atau jelajahi file
+                              project di sebelah kiri.
                             </span>
                           </div>
                         )}
@@ -2734,14 +2796,14 @@ function WorkspaceContent({ project }: { project: Project }) {
                     <div className="quick-actions">
                       {(kind === "roblox"
                         ? [
-                            "Susun struktur game",
+                            "Buat bagian game baru",
                             "Tambahkan checkpoint obby",
                             "Susun rencana",
                           ]
                         : kind === "mobile"
                           ? [
+                              "Buat layar baru",
                               "Buat navigasi native",
-                              "Tambahkan layar profil",
                               "Susun rencana",
                             ]
                           : [
