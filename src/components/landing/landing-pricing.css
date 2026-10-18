@@ -1,189 +1,20 @@
-/* ============================================================
-   Landing pricing — perbaikan tata letak & keterbacaan.
-   Di-scope .landing, diimpor setelah landing-responsive.css
-   dan landing-motion.css sehingga menang pada equal/higher
-   specificity. Hanya section #pricing yang disentuh; copy
-   dan angka kredit tidak diubah.
-   ============================================================ */
-.landing .pricing-section {
-  padding-top: clamp(72px, 10vw, 116px);
-  padding-bottom: clamp(60px, 9vw, 104px);
-}
-.landing .pricing-heading > p {
-  font-size: 15px;
-  color: #6f7268;
-  margin-top: 16px;
-  line-height: 1.65;
-}
-.landing .pricing-grid {
-  margin-top: 60px;
-  max-width: 1120px;
-  gap: 26px;
-  align-items: stretch;
-}
-.landing .pricing-card {
-  display: flex;
-  flex-direction: column;
-  padding: 34px 32px 30px;
-  border-radius: 14px;
-  background: #fdfcf8;
-  border-color: #e4e3d9;
-  box-shadow: 0 1px 2px #20211f0a;
-}
-.landing .pricing-card h3 {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.landing .pricing-card > p {
-  font-size: 14px;
-  color: #6d7268;
-  margin-top: 8px;
-  line-height: 1.55;
-}
-.landing .price {
-  margin: 28px 0 22px;
-  font-size: 40px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-.landing .price small {
-  font-size: 14px;
-  font-weight: 500;
-  color: #6f7268;
-  letter-spacing: 0;
-  margin-right: 4px;
-}
-.landing .price > span {
-  font-size: 13px;
-  color: #6f7268;
-  letter-spacing: 0;
-  margin-left: 5px;
-}
-.landing .pricing-credit {
-  margin-bottom: 26px;
-}
-.landing .pricing-credit b {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-.landing .pricing-credit span {
-  font-size: 13px;
-  color: #6d7268;
-  line-height: 1.55;
-}
-.landing .pricing-card .button {
-  font-size: 14px;
-  min-height: 48px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-.landing .price-divider {
-  margin: 26px 0 2px;
-  background: #e8e7dd;
-}
-.landing .price-feature {
-  font-size: 14px;
-  color: #5d6154;
-  margin-top: 15px;
-  gap: 11px;
-}
-.landing .price-feature svg {
-  color: #5f7c58;
-  flex-shrink: 0;
-  margin-top: 3px;
-}
-.landing .pricing-disclaimer {
-  margin-top: auto;
-  padding-top: 24px;
-  font-size: 11.5px;
-  color: #6d7268;
-  line-height: 1.5;
-}
-.landing .pricing-note {
-  margin-top: 44px;
-  font-size: 13px;
-  line-height: 1.7;
-  color: #6d7268;
-  max-width: 94ch;
-  margin-left: auto;
-  margin-right: auto;
+/* Section pricing — memperbesar tulisan harga saja.
+   Design kartu, badge, warna, dan layout lainnya = design awal, tidak diubah.
+   Selector memakai .pricing-card agar menang dari styles.css & landing-responsive.css
+   apa pun urutan cache-nya di browser. */
+
+.landing .pricing-card .price {
+  font-size: clamp(34px, 3.2vw, 44px);
 }
 
-/* Kartu Pro: deep forest, menonjol dari dua kartu terang. */
-.landing .pricing-card.featured {
-  background: #1f3a33;
-  border-color: #1f3a33;
-  color: #f4f2ea;
-  box-shadow: 0 30px 60px -26px #1f3a3380;
-}
-.landing .pricing-card.featured h3 {
-  color: #faf9f6;
-}
-.landing .pricing-card.featured > p {
-  color: rgba(250, 249, 246, 0.72);
-}
-.landing .pricing-card.featured .price {
-  color: #faf9f6;
-}
-.landing .pricing-card.featured .price small,
-.landing .pricing-card.featured .price > span {
-  color: rgba(250, 249, 246, 0.65);
-}
-.landing .pricing-card.featured .pricing-credit b {
-  color: #faf9f6;
-}
-.landing .pricing-card.featured .pricing-credit span {
-  color: rgba(250, 249, 246, 0.7);
-}
-.landing .pricing-card.featured .button {
-  background: #faf9f6;
-  color: #1f3a33;
-  border-color: #faf9f6;
-}
-.landing .pricing-card.featured .button:hover {
-  background: #fff;
-  box-shadow: 0 10px 24px -10px #00000059;
-}
-.landing .pricing-card.featured .price-divider {
-  background: rgba(250, 249, 246, 0.18);
-}
-.landing .pricing-card.featured .price-feature {
-  color: rgba(250, 249, 246, 0.85);
-}
-.landing .pricing-card.featured .price-feature svg {
-  color: #9ec49a;
-}
-.landing .pricing-card.featured .pricing-disclaimer {
-  color: rgba(250, 249, 246, 0.6);
-}
-.landing .popular-label {
-  top: -14px;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  height: 28px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: #efe7cf;
-  border: 1px solid #e0d3a9;
-  color: #6a5e39;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-  gap: 8px;
-  justify-content: center;
-  white-space: nowrap;
+.landing .pricing-card .price small {
+  font-size: 16px;
 }
 
-/* Kartu Pro tetap utuh di kolom sempit (grid 2 kolom/1 kolom). */
-@media (max-width: 600px) {
-  .landing .pricing-card {
-    padding: 28px 22px 26px;
-  }
-  .landing .price {
-    font-size: 36px;
-  }
+.landing .pricing-card .price > span {
+  font-size: 15px;
+}
+
+.landing .pricing-card .pricing-credit b {
+  font-size: 15px;
 }
