@@ -18,3 +18,27 @@
 .landing .pricing-card .pricing-credit b {
   font-size: 15px;
 }
+
+/* Badge "UNTUK IDE YANG LEBIH BESAR" — pill di tengah border atas kartu Pro.
+   Bar penuh lebar versi lama terlalu tebal, teks 10px kecil, dan sudut bawah
+   bar (lurus) membentuk ceukan putih di atas sudut membulat kartu.
+   Pill: ringan, terbaca, dan tidak menutupi layout kartu. */
+.landing .pricing-card.featured .popular-label {
+  top: -14px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  height: auto;
+  padding: 6px 16px;
+  border: 1px solid #ddd2ae;
+  border-radius: 999px;
+  background: #f2ead3;
+  color: #5f5430;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  box-shadow: 0 1px 2px rgba(32, 33, 31, 0.05);
+  white-space: nowrap;
+}
