@@ -28,6 +28,9 @@ const Services = lazy(() => import("./pages/Services"));
 const Upgrade = lazy(() => import("./pages/Upgrade"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Workspace = lazy(() => import("./pages/Workspace"));
+const Dokumentasi = lazy(() => import("./pages/Dokumentasi"));
+const Panduan = lazy(() => import("./pages/Panduan"));
+const Aturan = lazy(() => import("./pages/Aturan"));
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: boolean }
@@ -133,6 +136,13 @@ function App() {
               ),
             )}
             <Route path="/login" element={<Auth />} />
+            {/* Docs — public, no gate: anyone can read. Aliases for convenience. */}
+            <Route path="/docs" element={<Dokumentasi />} />
+            <Route path="/dokumentasi" element={<Dokumentasi />} />
+            <Route path="/panduan" element={<Panduan />} />
+            <Route path="/guide" element={<Panduan />} />
+            <Route path="/aturan" element={<Aturan />} />
+            <Route path="/rules" element={<Aturan />} />
             {/* Pricing and profile stay reachable without the workspace gate:
                 the pages themselves explain what a session would unlock. */}
             <Route path="/upgrade" element={<Upgrade />} />
