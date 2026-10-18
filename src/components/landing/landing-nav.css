@@ -1,14 +1,75 @@
-/* Landing navigation. Solid paper surface, one hairline, no glass or glow. */
+/* Landing navigation. Transparent over the dark hero, solid paper once
+   scrolled — one hairline, no glass or glow. */
 .landing-header {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: var(--lp-bg, #f7f7f2);
+  background: transparent;
+  transition: background-color 0.16s ease;
 }
 
 .landing-header.is-scrolled,
 .landing-header.is-open {
   border-bottom: 1px solid var(--lp-line, #dfe3d6);
+}
+
+.landing-header.is-scrolled {
+  background: var(--lp-bg, #f7f7f2);
+}
+
+/* Light chrome while the header floats over the dark hero. The mobile
+   drawer keeps its own light surface, so link colors switch only where
+   the header row itself is dark (desktop nav, or mobile header row). */
+.landing-header:not(.is-scrolled) .landing-nav-brand .logo {
+  color: #f2f1e8;
+}
+
+.landing-header:not(.is-scrolled) .landing-nav-brand .logo-dot {
+  color: #d3dcc9;
+}
+
+.landing-header:not(.is-scrolled) .landing-nav-cta {
+  border-color: #f2f1e8;
+  background: #f2f1e8;
+  color: #14201a;
+}
+
+.landing-header:not(.is-scrolled) .landing-nav-cta:hover {
+  background: #ffffff;
+}
+
+.landing-header:not(.is-scrolled) .landing-nav-toggle {
+  border-color: rgba(242, 241, 232, 0.32);
+  color: #f2f1e8;
+}
+
+@media (min-width: 1001px) {
+  .landing-header:not(.is-scrolled) .landing-nav-link {
+    color: rgba(242, 241, 232, 0.82);
+  }
+
+  .landing-header:not(.is-scrolled) .landing-nav-link:hover,
+  .landing-header:not(.is-scrolled) .landing-nav-link[aria-expanded="true"] {
+    background: rgba(242, 241, 232, 0.1);
+    color: #f2f1e8;
+  }
+
+  .landing-header:not(.is-scrolled) .landing-nav-link > svg {
+    color: rgba(242, 241, 232, 0.55);
+  }
+
+  .landing-header:not(.is-scrolled) .landing-nav-login {
+    color: rgba(242, 241, 232, 0.82);
+  }
+
+  .landing-header:not(.is-scrolled) .landing-nav-login:hover {
+    color: #f2f1e8;
+  }
+}
+
+.landing-header :is(a, button):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .landing-nav-surface {
@@ -212,8 +273,13 @@
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 1px solid var(--lp-line-strong, #c9cfc0);
+  border: 1px solid rgba(242, 241, 232, 0.32);
   border-radius: 4px;
+  color: #f2f1e8;
+}
+
+.landing-header.is-scrolled .landing-nav-toggle {
+  border-color: var(--lp-line-strong, #c9cfc0);
   color: var(--lp-ink, #1e2a22);
 }
 
@@ -222,9 +288,8 @@
   display: none;
 }
 
-.landing-header :is(a, button):focus-visible {
-  outline: 2px solid var(--lp-pine, #213f33);
-  outline-offset: 2px;
+.landing-header.is-scrolled .landing-mobile-login {
+  color: var(--lp-body, #3d4a41);
 }
 
 @media (max-width: 1000px) {
@@ -334,7 +399,6 @@
     font-weight: 500;
   }
 
-  .landing-header.is-open,
   .landing-header.is-scrolled {
     background: var(--lp-bg, #f7f7f2);
   }

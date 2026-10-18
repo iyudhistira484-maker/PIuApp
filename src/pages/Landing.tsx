@@ -20,6 +20,7 @@ import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowUpRight,
+  ArrowDown,
   Check,
   Plus,
   Minus,
@@ -246,41 +247,41 @@ export default function Landing() {
         )}
 
         <section className="hero-section">
+          <div className="hero-media" aria-hidden="true">
+            <video
+              className="hero-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            >
+              <source src="/landing/hero/hero.mp4" type="video/mp4" />
+            </video>
+            <div className="hero-scrim" />
+          </div>
           <div className="hero-content">
             <p className="lp-kicker">
               <span>01</span> Ruang kerja aplikasi
             </p>
-            <div className="hero-intro">
-              <div className="hero-copy">
-                <h1>
-                  {siteSettings.hero_title || (
-                    <>
-                      Bangun aplikasi
-                      <br />
-                      yang benar-benar dipakai.
-                    </>
-                  )}
-                </h1>
-                <p className="hero-subtitle">
-                  {siteSettings.hero_subtitle || (
-                    <>
-                      Tulis kebutuhan Anda dalam bahasa Indonesia. PiwuApp
-                      menyusun rencana, menulis kode, dan menampilkan preview
-                      yang bisa langsung diedit. Ekspor seluruh kode sebagai ZIP
-                      kapan saja.
-                    </>
-                  )}
-                </p>
-              </div>
-              <dl className="hero-facts">
-                {heroFacts.map(([term, value]) => (
-                  <div key={term}>
-                    <dt>{term}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
+            <h1>
+              {siteSettings.hero_title || (
+                <>
+                  Bangun aplikasi
+                  <br />
+                  yang benar-benar dipakai.
+                </>
+              )}
+            </h1>
+            <p className="hero-subtitle">
+              {siteSettings.hero_subtitle || (
+                <>
+                  Tulis kebutuhan Anda dalam bahasa Indonesia. PiwuApp menyusun
+                  rencana, menulis kode, dan menampilkan preview yang bisa
+                  langsung diedit. Ekspor seluruh kode sebagai ZIP kapan saja.
+                </>
+              )}
+            </p>
             <div className="hero-prompt with-project-kind" ref={hero}>
               <ProjectKindPicker
                 compact
@@ -317,6 +318,14 @@ export default function Landing() {
                 </button>
               ))}
             </div>
+            <dl className="hero-facts">
+              {heroFacts.map(([term, value]) => (
+                <div key={term}>
+                  <dt>{term}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
             <ul className="hero-footnote">
               <li>
                 <Check size={13} aria-hidden="true" /> Mulai gratis
@@ -330,6 +339,9 @@ export default function Landing() {
               </li>
             </ul>
           </div>
+          <a className="hero-scroll" href="#templates">
+            Lihat template <ArrowDown size={12} aria-hidden="true" />
+          </a>
         </section>
 
         <section className="templates-section section-container" id="templates">
