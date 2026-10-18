@@ -689,23 +689,16 @@ export default function Landing() {
           </div>
           <div>
             <h3 className="footer-heading">Sumber daya</h3>
-            <a href="#how-it-works">Panduan memulai</a>
-            <a href="#faq">Pusat bantuan</a>
-            <button onClick={() => setModal("Komunitas PiwuApp")}>
-              Komunitas
-            </button>
+            <Link to="/dokumentasi">Dokumentasi</Link>
+            <Link to="/panduan">Panduan</Link>
+            <Link to="/aturan">Aturan & ketentuan</Link>
           </div>
           <div>
             <h3 className="footer-heading">PiwuApp</h3>
-            <button onClick={() => setModal("Tentang PiwuApp")}>
-              Tentang kami
-            </button>
-            <button onClick={() => setModal("Keamanan & privasi")}>
-              Privasi & keamanan
-            </button>
-            <button onClick={() => setModal("Ketentuan penggunaan")}>
-              Ketentuan penggunaan
-            </button>
+            <Link to="/dokumentasi">Tentang PiwuApp</Link>
+            <a href="#security">Keamanan & privasi</a>
+            <Link to="/aturan">Ketentuan penggunaan</Link>
+            <button onClick={() => setModal("Komunitas PiwuApp")}>Komunitas</button>
           </div>
         </div>
         <div

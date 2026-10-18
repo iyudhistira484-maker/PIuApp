@@ -53,9 +53,16 @@ const groups = {
     heading: "Langkah pertama Anda",
     items: [
       {
-        label: "Panduan memulai",
-        description: "Kenali cara kerja PiwuApp.",
-        href: "#how-it-works",
+        label: "Dokumentasi",
+        description: "Semua yang perlu Anda tahu.",
+        href: "/dokumentasi",
+        category: "",
+        Icon: BookOpen,
+      },
+      {
+        label: "Panduan",
+        description: "Langkah-demi-langkah sampai publish.",
+        href: "/panduan",
         category: "",
         Icon: BookOpen,
       },
@@ -66,12 +73,32 @@ const groups = {
         category: "Semua",
         Icon: Shapes,
       },
+    ],
+  },
+  docs: {
+    label: "Aturan",
+    heading: "Transparan sejak awal",
+    items: [
       {
-        label: "Pertanyaan umum",
-        description: "Jawaban sebelum Anda mulai.",
-        href: "#faq",
+        label: "Aturan & ketentuan",
+        description: "Hak, kewajiban, dan pembayaran.",
+        href: "/aturan",
         category: "",
         Icon: MessageCircle,
+      },
+      {
+        label: "Harga & paket",
+        description: "Kredit, biaya, dan batasan.",
+        href: "#pricing",
+        category: "",
+        Icon: ShoppingBag,
+      },
+      {
+        label: "Keamanan & privasi",
+        description: "Isolasi, RLS, dan data Anda.",
+        href: "#security",
+        category: "",
+        Icon: BookOpen,
       },
     ],
   },
@@ -189,29 +216,48 @@ export default function LandingNav({
                 >
                   <p className="landing-nav-eyebrow">{group.heading}</p>
                   {group.items.map(
-                    ({ label, description, href, category, Icon }) => (
-                      <a
-                        key={label}
-                        href={href}
-                        onClick={() => {
-                          if (category) onCategory(category);
-                          close();
-                        }}
-                      >
-                        <span className="landing-nav-item-icon">
-                          <Icon size={19} aria-hidden="true" />
-                        </span>
-                        <span>
-                          <strong>{label}</strong>
-                          <small>{description}</small>
-                        </span>
-                        <ArrowUpRight
-                          className="landing-nav-item-arrow"
-                          size={15}
-                          aria-hidden="true"
-                        />
-                      </a>
-                    ),
+                    ({ label, description, href, category, Icon }) => {
+                      const isInternal = href.startsWith("/");
+                      const content = (
+                        <>
+                          <span className="landing-nav-item-icon">
+                            <Icon size={19} aria-hidden="true" />
+                          </span>
+                          <span>
+                            <strong>{label}</strong>
+                            <small>{description}</small>
+                          </span>
+                          <ArrowUpRight
+                            className="landing-nav-item-arrow"
+                            size={15}
+                            aria-hidden="true"
+                          />
+                        </>
+                      );
+                      return isInternal ? (
+                        <Link
+                          key={label}
+                          to={href}
+                          onClick={() => {
+                            if (category) onCategory(category);
+                            close();
+                          }}
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        <a
+                          key={label}
+                          href={href}
+                          onClick={() => {
+                            if (category) onCategory(category);
+                            close();
+                          }}
+                        >
+                          {content}
+                        </a>
+                      );
+                    },
                   )}
                 </div>
               </div>
