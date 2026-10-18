@@ -1,5 +1,8 @@
 import { adminFilters, applyAdminFilters } from "../lib/admin-query.mjs";
 import { createReadinessReader } from "../lib/readiness.mjs";
+import { researchStatus } from "../lib/research.mjs";
+import { GENERAL_TOOL_NAMES, toolRoundsMax } from "../lib/tools.mjs";
+import { searchCacheInfo, searchCapability } from "../lib/search.mjs";
 import { createPublicSiteReader } from "../lib/public-site.mjs";
 import { z } from "zod";
 import {
@@ -8,13 +11,92 @@ import {
   assertNoSecrets,
   capabilities,
 } from "../lib/core.mjs";
+import {
+  mergePlans,
+  mergeTopups,
+  ratePerCredit,
+} from "../../shared/credits.mjs";
 import { rateLimit } from "../lib/context.mjs";
 import {
   platformResult,
   platformAdmin,
+  schemaMissing,
   siteSettings,
 } from "../lib/platform.mjs";
+import {
+  aiOverview,
+  accountDetail,
+  runtimeOverview,
+  storageOverview,
+  studioOverview,
+  LOW_BALANCE,
+} from "../lib/admin-insights.mjs";
 import { paymentProvider } from "../providers/payments.mjs";
+import { retireIdentity } from "../lib/account-retire.mjs";
+import { notifyUser } from "../lib/notifications.mjs";
+const priceOverride = z
+  .object({
+    amount: z.number().int().min(1000).max(100000000),
+    credits: z.number().int().min(10).max(1000000),
+  })
+  .strict();
+/**
+ * Prices and credits per package, editable from the panel. Daily allowance,
+ * monthly cap and expiry are not here: migration 010 enforces those.
+ */
+const planOverrides = z
+  .object({
+    pro: priceOverride.optional(),
+    team: priceOverride.optional(),
+    credits300: priceOverride.optional(),
+    credits1400: priceOverride.optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const plans = mergePlans(value);
+    const pro = plans.find((row) => row.plan === "Pro");
+    const team = plans.find((row) => row.plan === "Team");
+    if (!pro || !team) return;
+    if (team.credits <= pro.credits)
+      ctx.addIssue({
+        code: "custom",
+        path: ["team", "credits"],
+        message: "Team harus memberi kredit lebih banyak daripada Pro.",
+      });
+    else if (
+      ratePerCredit(team.monthly, team.credits) >
+      ratePerCredit(pro.monthly, pro.credits)
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["team", "amount"],
+        message: "Harga per kredit Team tidak boleh lebih mahal daripada Pro.",
+      });
+    const [small, large] = mergeTopups(value);
+    if (large.credits <= small.credits)
+      ctx.addIssue({
+        code: "custom",
+        path: ["credits1400", "credits"],
+        message: "Top-up besar harus memberi kredit lebih banyak.",
+      });
+    else if (
+      ratePerCredit(large.amount, large.credits) >
+      ratePerCredit(small.amount, small.credits)
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["credits1400", "amount"],
+        message: "Harga per kredit top-up besar tidak boleh lebih mahal.",
+      });
+  });
+/** Lowest package an operator may require for a capability. */
+const planFeatures = z
+  .object({
+    sandbox: z.enum(["free", "pro", "team"]).optional(),
+    studio: z.enum(["free", "pro", "team"]).optional(),
+    marketplace_sell: z.enum(["free", "pro", "team"]).optional(),
+  })
+  .strict();
 export const siteSchema = z
   .object({
     maintenance: z.boolean(),
@@ -26,9 +108,16 @@ export const siteSchema = z
       .object({
         ai: z.boolean(),
         sandbox: z.boolean(),
-        publish: z.boolean(),
         payments: z.boolean(),
         marketplace: z.boolean(),
+        // Absent in settings saved before the Studio switch existed: treated
+        // as enabled, like every other switch.
+        studio: z.boolean().optional(),
+        // Package prices live beside the switches so migration 005's
+        // whitelist keeps working without a new migration. The same is true
+        // for the per-package access matrix.
+        plan_overrides: planOverrides.optional(),
+        plan_features: planFeatures.optional(),
       })
       .strict(),
   })
@@ -53,6 +142,7 @@ const schemas = {
     .object({ role: z.enum(["superadmin", "operator", "auditor", "remove"]) })
     .strict(),
   user_suspend: z.object({ suspended: z.boolean() }).strict(),
+  user_delete: z.object({ confirmation: z.uuid() }).strict(),
   credits: z
     .object({
       delta: z
@@ -69,9 +159,6 @@ const schemas = {
     .object({ status: z.enum(["published", "archived"]) })
     .strict(),
   recording_revoke: z.object({}).strict(),
-  publish_cancel: z.object({}).strict(),
-  hosting_retry: z.object({}).strict(),
-  unpublish: z.object({}).strict(),
   payment_reconcile: z.object({}).strict(),
   broadcast_save: broadcast,
   settings: z
@@ -131,18 +218,49 @@ export function registerAdmin(app, ctx) {
         platformResult(r);
         return r.count || 0;
       };
-      const [projects, pending, templates, broadcasts, cleanup] =
-        await Promise.all([
-          count("projects"),
-          count("payment_orders", (q) =>
-            q.in("status", ["created", "pending", "checkout_error", "review"]),
-          ),
-          count("templates", (q) => q.eq("status", "published")),
-          count("platform_broadcasts", (q) => q.eq("status", "published")),
-          count("hosting_cleanup_jobs"),
-        ]);
+      // Credits and cloud copies joined the product, so the top of the panel
+      // shows the two states an operator has to act on: accounts about to run
+      // out (the same threshold the dashboard uses) and copies that stopped
+      // syncing. Both are read-only counts.
+      const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+      const optionalCount = async (table, filter) => {
+        try {
+          return await count(table, filter);
+        } catch (error) {
+          // A migration that has not been applied yet (ADMIN_SETUP) must not
+          // take the whole overview down with it; every other failure is real
+          // and still surfaces to the caller.
+          if (error?.code === "ADMIN_SETUP") return null;
+          throw error;
+        }
+      };
+      const [
+        projects,
+        pending,
+        templates,
+        broadcasts,
+        lowBalance,
+        dormantWorkspaces,
+      ] = await Promise.all([
+        count("projects"),
+        count("payment_orders", (q) =>
+          q.in("status", ["created", "pending", "checkout_error", "review"]),
+        ),
+        count("templates", (q) => q.eq("status", "published")),
+        count("platform_broadcasts", (q) => q.eq("status", "published")),
+        optionalCount("credit_accounts", (q) => q.lt("balance", LOW_BALANCE)),
+        optionalCount("project_workspaces", (q) => q.lt("updated_at", cutoff)),
+      ]);
       res.json({
-        metrics: { projects, pending, templates, broadcasts, cleanup },
+        metrics: {
+          projects,
+          pending,
+          templates,
+          broadcasts,
+          lowBalance,
+          dormantWorkspaces,
+          lowBalanceThreshold: LOW_BALANCE,
+        },
         recent: platformResult(
           await ctx.admin
             .from("platform_audit")
@@ -254,20 +372,6 @@ export function registerAdmin(app, ctx) {
     ...auth,
     wrap(async (req, res) =>
       res.json({
-        jobs: platformResult(
-          await ctx.admin
-            .from("publish_jobs")
-            .select("id,project_id,user_id,status,error,attempts,created_at")
-            .order("created_at", { ascending: false })
-            .limit(30),
-        ),
-        cleanup: platformResult(
-          await ctx.admin
-            .from("hosting_cleanup_jobs")
-            .select("id,provider_site_id,attempts,error,created_at")
-            .order("created_at", { ascending: false })
-            .limit(30),
-        ),
         recordings: platformResult(
           await ctx.admin
             .from("recording_shares")
@@ -282,6 +386,29 @@ export function registerAdmin(app, ctx) {
     ),
   );
   const readiness = createReadinessReader(ctx);
+  app.get(
+    "/api/admin/ai",
+    ...auth,
+    rateLimit({ max: 20 }),
+    wrap(async (req, res) =>
+      res.json(await aiOverview(ctx, { refresh: req.query.refresh === "1" })),
+    ),
+  );
+  app.get(
+    "/api/admin/users/:id",
+    ...auth,
+    wrap(async (req, res) =>
+      res.json(await accountDetail(ctx, z.uuid().parse(req.params.id))),
+    ),
+  );
+  app.get(
+    "/api/admin/runtime",
+    ...auth,
+    rateLimit({ max: 30 }),
+    wrap(async (req, res) =>
+      res.json(await runtimeOverview(ctx, app.locals.coordination)),
+    ),
+  );
   app.get(
     "/api/admin/diagnostics",
     ...auth,
@@ -314,6 +441,42 @@ export function registerAdmin(app, ctx) {
               ? "sticky-owner-lease"
               : "process-local",
         },
+        // Read-only search status: which provider is selected, whether its key
+        // is present, and what the cache is doing. Never the key itself.
+        // `await` matters here: the job store reports the durable half from the
+        // database, not only this process's memory.
+        search: await (async () => {
+          const capability = searchCapability(ctx.env);
+          return {
+            ...researchStatus(ctx.env),
+            selected: capability.selected,
+            selectedAvailable: capability.selectedAvailable,
+            disabled: capability.disabled,
+            keyConfigured: Boolean(ctx.env.SEARCH_API_KEY),
+            // The read-only server tools that run on ordinary turns too: their
+            // names and their round budget, and never a claim that a model used
+            // them. The synthesis switch is already part of researchStatus().
+            tools: {
+              names: [...GENERAL_TOOL_NAMES],
+              rounds: toolRoundsMax(ctx.env),
+            },
+            locale: {
+              country: ctx.env.SEARCH_COUNTRY || "",
+              language: ctx.env.SEARCH_LANGUAGE || "",
+            },
+            cache: searchCacheInfo(ctx),
+            // Research that outlived its tab: how many answers wait to be
+            // collected, with no prompt or credential in the count.
+            jobs: ctx.researchJobs ? await ctx.researchJobs.stats() : null,
+            notice:
+              "Status konfigurasi, bukan bukti panggilan vendor berhasil. Untuk uji nyata jalankan npm run verify:search di server.",
+          };
+        })(),
+        // The two features added after the first panel: cloud copies with the
+        // backup story behind them, and the Roblox Studio bridge with the
+        // plugin version the server hands out.
+        storage: await storageOverview(ctx),
+        studio: await studioOverview(ctx),
         liveVerified: false,
         notice:
           "Probe read-only: bukan bukti transaksi, inference, deployment, uji perangkat, atau kelulusan pentest.",
@@ -337,6 +500,7 @@ export function registerAdmin(app, ctx) {
           "admin_role",
           "credits",
           "user_suspend",
+          "user_delete",
           "settings",
           "project_delete",
         ].includes(command.action) &&
@@ -378,22 +542,59 @@ export function registerAdmin(app, ctx) {
         const status = await provider.status(order);
         command.payload = status;
       }
+      // Account removal needs its own RPC: the personal rows go first, then the
+      // Auth identity is retired through the Admin API. Retrying the same
+      // request id returns the audit result and only repeats the Auth step.
       const result = platformResult(
-        await ctx.admin.rpc("piwu_admin_action", {
-          p_actor: req.user.id,
-          p_request: command.requestId,
-          p_action: command.action,
-          p_target: command.target,
-          p_payload: command.payload,
-          p_reason: command.reason,
-        }),
+        await ctx.admin.rpc(
+          command.action === "user_delete"
+            ? "piwu_admin_delete_account"
+            : "piwu_admin_action",
+          {
+            p_actor: req.user.id,
+            p_request: command.requestId,
+            ...(command.action === "user_delete"
+              ? {}
+              : { p_action: command.action }),
+            p_target: command.target,
+            p_payload: command.payload,
+            p_reason: command.reason,
+          },
+        ),
       );
+      if (command.action === "user_delete") {
+        // Migration 013 data is not covered by 011 (it did not exist then):
+        // remove KYC and the transfer destination before the identity retires.
+        const purged = await ctx.admin.rpc("piwu_purge_seller_pii", {
+          p_user: command.target,
+        });
+        if (purged.error && !schemaMissing(purged.error))
+          throw new HttpError(
+            502,
+            "Akun sudah ditangguhkan dan data pribadi dihapus, tetapi data penjual belum dibersihkan. Ulangi permintaan yang sama.",
+            "ACCOUNT_PAYOUT_PURGE",
+          );
+        await retireIdentity(ctx.admin, command.target);
+      }
+      if (command.action === "credits" && command.target) {
+        const delta = Number(command.payload.delta) || 0;
+        await notifyUser(ctx, command.target, {
+          kind: "credits",
+          title: "Saldo kredit disesuaikan",
+          body:
+            "Administrator " +
+            (delta > 0 ? "menambah " : "mengurangi ") +
+            Math.abs(delta) +
+            " kredit. Saldo sekarang " +
+            (result.balance ?? "diperbarui") +
+            ".",
+          href: "/account",
+          dedupe: "admin-credit:" + command.requestId,
+        });
+      }
       res.json({
         result,
-        notice:
-          command.action === "unpublish"
-            ? "Penghapusan hosting masuk antrean; periksa status cleanup, bukan langsung dianggap offline."
-            : "Perubahan dikonfirmasi dan dicatat dalam audit log.",
+        notice: "Perubahan dikonfirmasi dan dicatat dalam audit log.",
       });
     }),
   );

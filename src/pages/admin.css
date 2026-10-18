@@ -1162,3 +1162,165 @@
   outline: 2px solid #2563eb;
   outline-offset: 3px;
 }
+
+/* AI & model panel: model ids are long, so chips wrap instead of overflowing. */
+.ad-model-group {
+  border-top: 1px solid var(--ad-border);
+  padding: 16px 0 6px;
+  margin-top: 18px;
+}
+.ad-model-group > strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.ad-model-group > strong small {
+  font-size: 9px;
+  font-weight: 400;
+  color: #65725f;
+}
+.ad-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.ad-chips code {
+  font-size: 9px;
+  padding: 4px 7px;
+  border: 1px solid var(--ad-border);
+  border-radius: 4px;
+  background: #f7f9f5;
+  color: #33412d;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.ad-chips > span {
+  font-size: 9px;
+  color: #65725f;
+  align-self: center;
+}
+.ad-card-heading .ad-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ad-note.ad-error {
+  color: #8d3a3a;
+  border-top-color: #e6d3d3;
+}
+/* Read-only account detail panel under the users table. */
+.ad-detail {
+  margin-top: 20px;
+  border-style: dashed;
+}
+.ad-detail dl {
+  margin-top: 20px;
+}
+@media (max-width: 900px) {
+  .ad-chips code {
+    font-size: 8px;
+  }
+  .ad-card-heading {
+    flex-wrap: wrap;
+  }
+}
+.ad-detail-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #3d7452;
+}
+
+/* Package prices: two editable numbers per row, effective defaults shown. */
+.ad-price-list {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+.ad-price-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 160px 140px;
+  gap: 14px;
+  align-items: end;
+  padding: 12px 14px;
+  border: 1px solid #e4e9dc;
+  border-radius: 8px;
+  background: #fbfcf7;
+}
+.ad-price-row b {
+  display: block;
+  font-size: 12px;
+  color: #2f3a25;
+}
+.ad-price-row small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #626b59;
+}
+.ad-price-row label {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 10px;
+  color: #5f6b52;
+}
+.ad-price-row input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #d8e0d2;
+  border-radius: 6px;
+  background: #fff;
+  color: #35472e;
+  font: inherit;
+  font-size: 12px;
+}
+.ad-price-row input:disabled {
+  background: #f5f7f1;
+  color: #65725f;
+}
+@media (max-width: 720px) {
+  .ad-price-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ad-price-row > div {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Read-only numbers on the settings tab: visible, not editable. */
+.ad-facts {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ad-facts li {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e4e9dc;
+  border-radius: 7px;
+  background: #fbfcf7;
+  font-size: 11px;
+  line-height: 1.65;
+  color: #55614a;
+}
+.ad-facts b {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6d7a61;
+}
+@media (max-width: 620px) {
+  .ad-facts li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

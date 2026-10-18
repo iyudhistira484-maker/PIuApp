@@ -1,0 +1,55 @@
+/* Backup lives in the storage dialog: plain buttons and one honest warning. */
+.storage-backup {
+  display: grid;
+  gap: 12px;
+  margin-top: 6px;
+}
+.storage-backup-intro {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #6f7a5c;
+}
+.storage-backup-intro code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #eef1e6;
+  font-size: 10px;
+}
+.storage-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.storage-backup-actions .button {
+  font-size: 11px;
+}
+.storage-backup-note {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #a9b39c;
+}
+.storage-backup-confirm {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #dfe3d6;
+  border-radius: 8px;
+  background: #f7f9f2;
+}
+.storage-backup-confirm b {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.storage-backup-confirm p {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #6f7a5c;
+}
+.storage-backup-warn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #a9762c;
+}

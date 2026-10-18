@@ -158,12 +158,12 @@
 .invite-button:hover {
   background: var(--ide-accent-bg, #3f71eb);
 }
-.publish-button {
+.export-button {
   background: var(--ide-surface, #e5e8ee);
   color: var(--ide-text, #242832);
   border-color: var(--ide-border, #f3f4f5);
 }
-.publish-button:hover {
+.export-button:hover {
   background: var(--ide-surface, #fff);
   color: var(--ide-text, #151a24);
 }
@@ -714,13 +714,6 @@
   align-items: center;
   gap: 9px;
 }
-.ai-online {
-  width: 4px;
-  height: 4px;
-  background: var(--ide-success-bg, #7eaa8f);
-  border-radius: 50%;
-  box-shadow: 0 0 5px #8eb99944;
-}
 .chat-tabs {
   display: flex;
   padding: 10px 13px 0;
@@ -774,10 +767,6 @@
   padding: 39px 6px;
   text-align: left;
 }
-.welcome-symbol {
-  font-size: 37px;
-  color: var(--ide-success, #a5bda7);
-}
 .chat-welcome h2 {
   font-size: 22px;
   font-weight: 500;
@@ -790,6 +779,40 @@
   line-height: 1.9;
   color: var(--ide-accent, #718499);
   margin-top: 12px;
+}
+.welcome-suggests {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+.welcome-suggests button {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border: 1px solid var(--ide-border, #23252a);
+  border-radius: 7px;
+  background: transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.welcome-suggests button:hover {
+  background: var(--ide-bg, #1c2824);
+  border-color: var(--ide-raised, #3a4048);
+}
+.welcome-suggests b {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ide-text, #d6d8dc);
+}
+.welcome-suggests small {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--ide-subtle, #858a96);
 }
 .welcome-memory {
   display: flex;
@@ -933,6 +956,191 @@
 }
 .ai-file-list > button:hover {
   color: var(--ide-text, #d2e8d8);
+}
+/* Structured scene ops: applied vs refused, with the server's own wording so a
+   rejected batch never looks like a successful edit. */
+.ai-ops-list {
+  background: var(--ide-bg, #162820);
+  border: 1px solid var(--ide-border, #2b4736);
+  border-radius: 6px;
+  margin-top: 13px;
+  padding: 10px;
+}
+.ai-ops-list > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 7px;
+  color: var(--ide-success, #74a183);
+  margin-bottom: 7px;
+}
+.ai-ops-list > span.warn {
+  color: var(--ide-warning, #d8a657);
+}
+.ai-ops-list p {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 8px;
+  line-height: 1.8;
+  color: var(--ide-text, #cfd8d2);
+  margin: 0;
+  padding: 3px 0;
+}
+.ai-ops-list p strong {
+  font-weight: 600;
+}
+.ai-ops-list p.rejected {
+  color: var(--ide-warning, #d8a657);
+}
+.ai-ops-list small {
+  display: block;
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-muted, #7f9188);
+  margin-top: 6px;
+}
+/* Research sources: numbered like the citations in the answer, clickable, and
+   explicit about which ones the answer never used. */
+.ai-sources {
+  background: var(--ide-bg, #162820);
+  border: 1px solid var(--ide-border, #2b4736);
+  border-radius: 6px;
+  margin-top: 13px;
+  padding: 10px;
+}
+.ai-sources .sources-headline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 7px;
+  color: var(--ide-accent, #82baff);
+  width: 100%;
+  text-align: left;
+}
+.ai-sources ol {
+  list-style: none;
+  margin: 7px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ai-sources li {
+  display: grid;
+  gap: 2px;
+  border-left: 2px solid var(--ide-border, #2b4736);
+  padding-left: 8px;
+}
+.ai-sources li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  line-height: 1.6;
+  color: var(--ide-text, #cfd8d2);
+  overflow-wrap: anywhere;
+}
+.ai-sources li a:hover {
+  color: var(--ide-accent, #82baff);
+  text-decoration: underline;
+}
+.ai-sources li small {
+  font-size: 7px;
+  color: var(--ide-muted, #7f9188);
+}
+.ai-sources li span {
+  font-size: 7px;
+  line-height: 1.9;
+  color: var(--ide-subtle, #717887);
+}
+.ai-sources > small {
+  display: block;
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-muted, #7f9188);
+  margin-top: 8px;
+}
+.ai-sources > small.warn {
+  color: var(--ide-warning, #efcf87);
+}
+/* A query that failed is listed by its own wording, so "no sources" never
+   looks like "nothing exists on the internet". */
+.ai-sources ul.sources-failed {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0 0 0 8px;
+  display: grid;
+  gap: 3px;
+  border-left: 2px solid var(--ide-warning-bg, #3c3322);
+}
+.ai-sources ul.sources-failed li {
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-warning, #efcf87);
+  overflow-wrap: anywhere;
+}
+/* The abstractive synthesis is labelled as a model artifact, so it never reads
+   like a quote from the pages below it. */
+.research-summary {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ide-border, #24302b);
+  border-radius: 8px;
+  background: var(--ide-panel-2, #10161350);
+}
+.research-summary strong {
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ide-subtle, #717887);
+}
+.research-summary span,
+.research-summary small {
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-muted, #7f9188);
+}
+.research-summary p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.7;
+  color: var(--ide-text, #cfd8d2);
+  overflow-wrap: anywhere;
+}
+.research-summary small.warn {
+  color: var(--ide-warning, #efcf87);
+}
+/* What the read-only server tools did: names and outcomes, never a claim that
+   something ran when it did not. */
+.ai-tools {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+}
+.ai-tools small {
+  display: block;
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-muted, #7f9188);
+}
+.ai-tools ul.sources-failed {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 8px;
+  border-left: 2px solid var(--ide-warning-bg, #3c3322);
+}
+.ai-tools ul.sources-failed li {
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-warning, #efcf87);
+  overflow-wrap: anywhere;
+}
+/* The research toggle uses the shared icon button pressed state. */
+.ws-icon[aria-pressed="true"] {
+  background: var(--ide-accent-bg, #243b55);
+  color: var(--ide-accent, #82baff);
 }
 .message-actions {
   display: flex;
@@ -1105,6 +1313,16 @@
   background: var(--ide-danger-bg, #754f54);
   border-color: var(--ide-border, #a0717a);
 }
+/* A research turn that outlived its tab: visible, but never louder than the
+   composer it belongs to. */
+.bg-research {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 3px 0;
+  font-size: 7px;
+  color: var(--ide-accent, #7189a5);
+}
 .composer-footer {
   display: flex;
   align-items: center;
@@ -1141,6 +1359,226 @@
 .context-chip > button {
   display: flex;
   color: var(--ide-accent, #6e8eaf);
+}
+/* Chip list plus the plain hint that says what a photo is and is not used for. */
+.context-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.context-chip .chip-photo {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ide-subtle, #7f9188);
+}
+.context-hint {
+  margin: 0 0 8px;
+  font-size: 7px;
+  line-height: 1.7;
+  color: var(--ide-muted, #7f9188);
+}
+/* Photos the project keeps: small redraws, and one honest line about where. */
+.project-photos {
+  margin: 0 0 8px;
+  border: 1px solid var(--ide-border, #2a3a4d);
+  border-radius: 6px;
+  background: var(--ide-panel, #0f1720);
+  padding: 6px 8px;
+}
+.project-photos-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.project-photos-head b {
+  font-size: 8px;
+  color: var(--ide-text, #cfd8d2);
+}
+.project-photos-head b span {
+  color: var(--ide-accent, #a0bbdc);
+}
+.project-photos-head small {
+  font-size: 7px;
+  line-height: 1.6;
+  color: var(--ide-muted, #7f9188);
+}
+.project-photos ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  max-height: 152px;
+  overflow: auto;
+}
+.project-photos li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.project-photos li > div {
+  flex: 1;
+  min-width: 0;
+}
+.project-photos li b {
+  display: block;
+  font-size: 8px;
+  color: var(--ide-text, #cfd8d2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-photos li small {
+  font-size: 7px;
+  color: var(--ide-subtle, #717887);
+}
+.photo-thumb {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--ide-border, #3b526c);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--ide-raised, #1c2836);
+  color: var(--ide-text, #cfd8d2);
+  font-size: 10px;
+  display: grid;
+  place-items: center;
+}
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* One photo large, beside the colours that were read out of it. */
+.photo-view {
+  display: grid;
+  gap: 8px;
+}
+.photo-view img {
+  max-width: 100%;
+  max-height: 46vh;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #0b0c0e;
+  justify-self: center;
+}
+.photo-view-note {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.6;
+  color: var(--ide-muted, #7f9188);
+}
+.photo-view-note.warn {
+  color: #b4853c;
+}
+.photo-view dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.photo-view dt {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ide-subtle, #717887);
+}
+.photo-view dd {
+  margin: 0;
+  font-size: 9px;
+  color: var(--ide-text, #cfd8d2);
+}
+.photo-view-colors {
+  display: grid;
+  gap: 4px;
+}
+.photo-view-colors b {
+  font-size: 9px;
+  color: var(--ide-text, #cfd8d2);
+}
+.photo-view-colors > span {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 1px;
+  max-width: 260px;
+}
+.photo-view-colors i {
+  display: block;
+  padding-top: 100%;
+  border-radius: 1px;
+}
+.photo-view-colors small {
+  font-size: 7px;
+  line-height: 1.6;
+  color: var(--ide-subtle, #717887);
+}
+.photo-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* A scene.build report: what the server built, shape by shape. */
+.ops-applied {
+  display: grid;
+  gap: 3px;
+}
+.ops-build {
+  margin: 0 0 4px 14px;
+  padding-left: 8px;
+  border-left: 2px solid var(--ide-border, #3b526c);
+}
+.ops-build small {
+  display: block;
+  font-size: 7px;
+  line-height: 1.8;
+  color: var(--ide-muted, #7f9188);
+}
+.ops-build ul {
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.ops-build ul li {
+  display: flex;
+  gap: 6px;
+  font-size: 7px;
+  color: var(--ide-text, #cfd8d2);
+}
+.ops-build ul li span {
+  color: var(--ide-subtle, #717887);
+}
+/* The colours the photo produced, shown as swatches so they can be judged. */
+.ops-colors {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0 0;
+  font-size: 7px;
+  color: var(--ide-subtle, #717887);
+}
+.ops-colors > span {
+  display: flex;
+}
+.ops-colors i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--ide-border, #3b526c);
+  margin-left: -2px;
+}
+.ops-colors i:first-child {
+  margin-left: 0;
 }
 .mention-menu {
   position: absolute;
@@ -1204,6 +1642,58 @@
 }
 .ws-statusbar .recording-indicator > svg {
   color: var(--ide-danger, #bd727a);
+}
+.presence-stack {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 260px;
+}
+.presence-avatar {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 0 0 1px var(--ide-bg, #10161f);
+}
+.presence-more {
+  font-size: 8px;
+  color: var(--ide-accent, #9cb8d7);
+}
+.presence-status {
+  font-size: 9px;
+  color: var(--ide-success, #8aa68c);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.presence-status.degraded {
+  color: var(--ide-warning, #b08a4a);
+}
+.presence-status.conflict {
+  color: var(--ide-danger, #bd727a);
+}
+.piwu-peer-line {
+  background: #47729614;
+}
+.piwu-peer-gutter {
+  width: 3px !important;
+  margin-left: 4px;
+  border-radius: 2px;
+  background: var(--ide-accent, #477296);
+}
+.piwu-peer-label {
+  color: var(--ide-accent, #477296);
+  font-size: 10px;
+  font-style: italic;
+  opacity: 0.9;
 }
 .ws-dropdown {
   position: absolute;
@@ -1915,27 +2405,6 @@
   margin: 20px 0;
   line-height: 1.9;
 }
-.publish-domain {
-  border: 1px solid var(--ide-accent, #dbe7cf);
-  background: var(--ide-surface, #f0f5e8);
-  border-radius: 7px;
-  padding: 13px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 22px;
-  gap: 12px;
-}
-.publish-domain > span {
-  font-size: 10px;
-  color: var(--ide-success, #7b9264);
-  overflow-wrap: anywhere;
-}
-.publish-domain > small {
-  font-size: 8px;
-  color: var(--ide-success, #a4b690);
-  white-space: nowrap;
-}
 .mt-3 {
   margin-top: 12px;
 }
@@ -2424,7 +2893,7 @@
   .ws-top-actions .invite-button {
     display: none;
   }
-  .ws-top-actions .publish-button {
+  .ws-top-actions .export-button {
     font-size: 0;
     gap: 0;
     width: 28px;
@@ -2434,7 +2903,7 @@
     color: var(--ide-accent, #a8c9f3);
     border-color: var(--ide-border, #34557e);
   }
-  .ws-top-actions .publish-button svg {
+  .ws-top-actions .export-button svg {
     width: 13px;
   }
   .icon-rail {
@@ -2609,12 +3078,6 @@
     font-size: 10px;
   }
   .scan-finding > span {
-    font-size: 7px;
-  }
-  .publish-domain > span {
-    font-size: 9px;
-  }
-  .publish-domain > small {
     font-size: 7px;
   }
   .ws-statusbar .recording-indicator {

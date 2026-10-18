@@ -1,0 +1,221 @@
+/* Model picker for the AI composer. Uses IDE semantic tokens only, so light
+   and dark workbenches stay consistent. Compact by design: the chat panel is a
+   narrow column and this must never push the composer around. */
+.ai-model-picker {
+  position: relative;
+  min-width: 0;
+}
+.ai-model-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ide-accent, #7189a5);
+  font-size: 8px;
+  line-height: 1.4;
+  text-align: left;
+}
+.ai-model-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-model-trigger em {
+  font-style: normal;
+  color: var(--ide-subtle, #5f6f82);
+  font-size: 7px;
+}
+.ai-model-trigger:hover:not(:disabled) {
+  border-color: var(--ide-border, #364960);
+  background: var(--ide-hover, #202b38);
+}
+.ai-model-trigger[aria-expanded="true"] {
+  border-color: var(--ide-border-strong, #536174);
+  background: var(--ide-accent-bg, #243b55);
+  color: var(--ide-text, #e2e7ef);
+}
+.ai-model-trigger:disabled {
+  opacity: 0.5;
+}
+.ai-model-chevron {
+  flex-shrink: 0;
+}
+.ai-model-menu {
+  position: absolute;
+  z-index: 45;
+  bottom: calc(100% + 6px);
+  left: 0;
+  /* Placement is measured in JS and overridden inline; the rules below are the
+     no-JS-positioning fallback. */
+  display: flex;
+  flex-direction: column;
+  width: min(330px, calc(100vw - 46px));
+  max-height: min(320px, calc(100dvh - 150px));
+  border: 1px solid var(--ide-border, #364960);
+  border-radius: 9px;
+  background: var(--ide-surface, #20242b);
+  box-shadow: 0 -10px 30px #0004;
+  overflow: hidden;
+}
+/* Not enough room above the composer: open downwards instead. */
+.ai-model-menu.drop-down {
+  top: calc(100% + 6px);
+  bottom: auto;
+  box-shadow: 0 10px 30px #0004;
+}
+.ai-model-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--ide-border, #364960);
+  color: var(--ide-subtle, #5f6f82);
+}
+.ai-model-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ide-text, #e2e7ef);
+  font-size: 9px;
+}
+.ai-model-search input::placeholder {
+  color: var(--ide-subtle, #7b8798);
+}
+.ai-model-search input:focus-visible {
+  outline: 0;
+}
+.ai-model-refresh {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  color: var(--ide-subtle, #7b8798);
+}
+.ai-model-refresh:hover {
+  background: var(--ide-hover, #2c3541);
+  color: var(--ide-text, #e2e7ef);
+}
+.ai-model-spin {
+  animation: ai-model-spin 900ms linear infinite;
+}
+@keyframes ai-model-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ai-model-menu > ul {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  margin: 0;
+  list-style: none;
+}
+.ai-model-menu > ul ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.ai-model-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 7px 4px;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--ide-subtle, #7b8798);
+}
+.ai-model-group i {
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ai-model-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--ide-text, #e2e7ef);
+}
+.ai-model-option .ai-model-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+}
+.ai-model-option small {
+  grid-column: 1 / 2;
+  font-size: 7px;
+  line-height: 1.5;
+  color: var(--ide-subtle, #7b8798);
+}
+.ai-model-option > svg {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  color: var(--ide-success, #9ad7b3);
+}
+.ai-model-option.is-active {
+  background: var(--ide-hover, #2c3541);
+}
+.ai-model-option.is-selected .ai-model-name {
+  font-weight: 600;
+}
+.ai-model-empty {
+  padding: 12px 9px;
+  font-size: 8px;
+  color: var(--ide-subtle, #7b8798);
+}
+.ai-model-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border-top: 1px solid var(--ide-border, #364960);
+  background: var(--ide-raised, #282e36);
+  font-size: 7px;
+  color: var(--ide-subtle, #9aa8ba);
+}
+.ai-model-note button {
+  flex-shrink: 0;
+  font-size: 7px;
+  font-weight: 600;
+  color: var(--ide-accent, #82baff);
+}
+/* The composer footer is a tight row: the trigger must shrink, not wrap. */
+.ai-model-picker {
+  flex-shrink: 1;
+}
+.composer-footer > span {
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .ai-model-menu {
+    width: min(320px, calc(100vw - 30px));
+    max-height: min(260px, calc(100dvh - 120px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-model-spin {
+    animation: none;
+  }
+}

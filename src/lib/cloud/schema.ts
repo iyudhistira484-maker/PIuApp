@@ -14,6 +14,31 @@ const files = z
   .record(safePath, z.string().max(262144))
   .refine((f) => Object.keys(f).length <= 200);
 const finiteTime = z.number().finite().nonnegative();
+const opsChange = z.object({
+  kind: z.string().max(40),
+  target: z.string().max(120),
+  id: z.string().max(100).optional(),
+  name: z.string().max(80).optional(),
+  changes: z.array(z.string().max(200)).max(40).optional(),
+  reason: z.string().max(300).optional(),
+});
+const sourceRef = z.object({
+  index: z.number().int().min(1).max(99),
+  provider: z.string().max(40),
+  kind: z.string().max(20),
+  title: z.string().max(200),
+  url: z.string().max(2048),
+  snippet: z.string().max(400).optional(),
+});
+const researchRound = z.object({
+  query: z.string().max(300),
+  kind: z.string().max(20),
+  provider: z.string().max(40),
+  label: z.string().max(60),
+  cached: z.boolean(),
+  count: z.number().int().min(0).max(999),
+  error: z.string().max(400),
+});
 const message = z.object({
   id: z.string().min(1).max(128),
   role: z.enum(["user", "assistant"]),
@@ -21,6 +46,31 @@ const message = z.object({
   mode: z.enum(["Builder", "Plan", "Ask"]),
   files: z.array(safePath).optional(),
   summary: z.array(z.string()).optional(),
+  // Report of applied/rejected structured scene ops, shown as-is in the chat.
+  ops: z
+    .object({
+      version: z.number(),
+      applied: z.array(opsChange).max(40),
+      rejected: z.array(opsChange).max(40),
+      sceneChanged: z.boolean(),
+      note: z.string().max(300),
+    })
+    .optional(),
+  // Sources and the citation report of a research round, so a saved answer can
+  // still be checked against the pages it was based on.
+  sources: z.array(sourceRef).max(24).optional(),
+  research: z
+    .object({
+      rounds: z.array(researchRound).max(6),
+      sources: z.array(sourceRef).max(24),
+      read: z.number().int().min(0).max(24),
+      notice: z.string().max(400),
+      cited: z.array(z.number().int().min(1).max(99)).max(24),
+      uncited: z.array(z.number().int().min(1).max(99)).max(24),
+      invalid: z.array(z.number().int().min(0).max(99)).max(24),
+      citationNotice: z.string().max(400).optional(),
+    })
+    .optional(),
   at: finiteTime,
 });
 export const projectSchema = z.object({

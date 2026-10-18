@@ -95,7 +95,6 @@ test("Roblox recording renders scene not React, unsupported web runtime actions 
         capabilities: {
           cloud: true,
           sandbox: true,
-          publish: true,
           audit: true,
         },
       },
@@ -132,8 +131,8 @@ test("Roblox recording renders scene not React, unsupported web runtime actions 
   ).toBeVisible();
   await page.getByRole("button", { name: "Tutup", exact: true }).click();
   await page.getByRole("button", { name: "Layanan", exact: true }).click();
-  await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+  // The builder publishes nothing: the service panel has no Publish tab.
   await expect(
-    dialog.getByRole("button", { name: "Build & publish" }),
-  ).toBeDisabled();
+    dialog.getByRole("button", { name: "Publish", exact: true }),
+  ).toHaveCount(0);
 });

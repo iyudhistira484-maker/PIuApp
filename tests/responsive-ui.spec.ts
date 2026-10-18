@@ -59,7 +59,6 @@ for (const size of sizes) {
     for (const selector of [
       ".prompt-suggestions button",
       ".template-tabs button",
-      ".billing-toggle button",
     ]) {
       for (const item of await page.locator(selector).all())
         expect(
@@ -73,10 +72,7 @@ for (const size of sizes) {
     await page
       .locator(".pricing-section")
       .screenshot({ path: `.artifacts/responsive-${size.name}-pricing.png` });
-    await page.getByRole("button", { name: /Tahunan/ }).click();
-    await expect(page.getByRole("button", { name: /Tahunan/ })).toHaveClass(
-      /active/,
-    );
+    await expect(page.locator("#pricing .pricing-card")).toHaveCount(3);
     await page
       .getByRole("button", { name: "Apakah saya harus bisa coding?" })
       .click();
@@ -84,16 +80,12 @@ for (const size of sizes) {
       page.getByRole("button", { name: "Apakah saya harus bisa coding?" }),
     ).toHaveAttribute("aria-expanded", "true");
     if ([320, 834, 1440].includes(size.width)) {
-      await page
-        .locator(".templates-section")
-        .screenshot({
-          path: `.artifacts/responsive-${size.name}-templates.png`,
-        });
-      await page
-        .locator(".features-section")
-        .screenshot({
-          path: `.artifacts/responsive-${size.name}-features.png`,
-        });
+      await page.locator(".templates-section").screenshot({
+        path: `.artifacts/responsive-${size.name}-templates.png`,
+      });
+      await page.locator(".features-section").screenshot({
+        path: `.artifacts/responsive-${size.name}-features.png`,
+      });
       const results = await new AxeBuilder({ page })
         .include(".landing")
         .analyze();

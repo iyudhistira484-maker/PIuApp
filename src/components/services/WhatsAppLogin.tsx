@@ -42,14 +42,12 @@ export default function WhatsAppLogin({
               if (r.error) throw r.error;
               if (r.data.session) {
                 const u = r.data.session.user;
-                useStore
-                  .getState()
-                  .setUser({
-                    id: u.id,
-                    email: u.email || "",
-                    name: u.user_metadata?.name || "Pembuat",
-                    demo: false,
-                  });
+                useStore.getState().setUser({
+                  id: u.id,
+                  email: u.email || "",
+                  name: u.user_metadata?.name || "Pembuat",
+                  demo: false,
+                });
                 onSuccess();
               }
             } else {

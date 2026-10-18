@@ -153,13 +153,24 @@ export function appOrigin(env) {
     throw new HttpError(503, "APP_BASE_URL HTTPS belum dikonfigurasi.");
   }
 }
+/** `SEARCH_ENABLED=false` switches every outbound search off, so an operator
+ * can keep the server from making (and billing) those calls. */
+export function searchDisabled(env) {
+  const flag = String(env.SEARCH_ENABLED ?? "true").toLowerCase();
+  return flag === "false" || flag === "0" || flag === "off" || flag === "no";
+}
 export function capabilities(env) {
   const auth = Boolean(env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY);
   const db = auth && Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
   return {
     auth,
     cloud: db,
-    ai: db && Boolean(env.LLM_API_KEY && env.LLM_BASE_URL && env.LLM_MODEL),
+    // LLM_MODEL is optional: when it is empty the first model the API key
+    // offers is used, resolved per request from GET {LLM_BASE_URL}/models.
+    ai: db && Boolean(env.LLM_API_KEY && env.LLM_BASE_URL),
+    // Search is only usable when a provider is both named and keyed; which one
+    // that is (and whether it is ready) is reported by researchStatus().
+    search: db && !searchDisabled(env),
     whatsapp:
       db &&
       Boolean(
@@ -169,14 +180,6 @@ export function capabilities(env) {
         env.SUPABASE_SMS_HOOK_SECRET,
       ),
     sandbox: db && Boolean(env.E2B_API_KEY),
-    publish:
-      db &&
-      Boolean(
-        env.E2B_API_KEY &&
-        env.E2B_TEMPLATE &&
-        env.NETLIFY_TOKEN &&
-        env.APP_BASE_URL,
-      ),
     payments:
       db &&
       Boolean(

@@ -288,7 +288,7 @@ export class SandboxProvider {
       } catch {
         throw new HttpError(
           422,
-          "Build sandbox gagal. Periksa dependensi dan kode sebelum publish.",
+          "Build sandbox gagal. Periksa dependensi dan kode sebelum menjalankan preview.",
         );
       }
       let report = null;

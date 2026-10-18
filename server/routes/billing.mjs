@@ -9,11 +9,14 @@ import {
   capabilities,
 } from "../lib/core.mjs";
 import {
-  products,
+  productCatalog,
   paymentProvider,
   verifyPaymentHook,
 } from "../providers/payments.mjs";
+import { planOverridesOf, siteSettings } from "../lib/platform.mjs";
 import { rateLimit } from "../lib/context.mjs";
+import { creditStatus } from "../lib/credit-status.mjs";
+import { notifyUser } from "../lib/notifications.mjs";
 export function registerBilling(app, ctx) {
   app.get(
     "/api/account",
@@ -81,8 +84,18 @@ export function registerBilling(app, ctx) {
           .select("reward_status")
           .eq("referrer_id", req.user.id),
       );
+      // What the database says about today's allowance, asked after the claim
+      // above (piwu_ensure_credits refills it) so the numbers describe the day
+      // the account is actually in. A missing migration or an unreadable
+      // answer comes back as `applied: false` with a note, never as a guess.
+      const credits = await creditStatus(admin, req.user.id);
+      // The catalogue is the default price list with whatever the
+      // administrator saved, so checkout and this answer cannot disagree.
+      const site = await siteSettings(ctx);
+      const products = productCatalog(planOverridesOf(site.value));
       res.json({
         balance,
+        credits,
         ledger,
         orders,
         plan: plans[0] || { plan: "Free" },
@@ -119,6 +132,8 @@ export function registerBilling(app, ctx) {
       const { sku, templateId } = z
         .object({ sku: z.string().max(100), templateId: z.uuid().optional() })
         .parse(req.body);
+      const site = await siteSettings(ctx);
+      const products = productCatalog(planOverridesOf(site.value));
       let product = Object.hasOwn(products, sku) ? products[sku] : null;
       if (sku === "template" && templateId) {
         const t = check(
@@ -221,7 +236,7 @@ export function registerBilling(app, ctx) {
       ctx.fetcher,
     );
     const status = await p.status(order);
-    return check(
+    const applied = check(
       await ctx.admin.rpc("piwu_apply_payment", {
         p_id: order.id,
         p_amount: status.amount,
@@ -229,6 +244,48 @@ export function registerBilling(app, ctx) {
         p_state: status.state,
       }),
     );
+    // piwu_apply_payment only returns "paid"/"refunded" on the transition, so
+    // a retried refresh or webhook cannot notify twice. The bell is the same
+    // row on every device; the dedupe key is a second guard.
+    if (applied === "paid" || applied === "already_paid") {
+      const detail =
+        order.kind === "plan"
+          ? `Paket ${order.plan} aktif selama 30 hari.`
+          : order.kind === "template"
+            ? "Template masuk ke koleksi Anda."
+            : `${order.credits} kredit ditambahkan ke saldo.`;
+      await notifyUser(ctx, order.user_id, {
+        kind: "payment",
+        title: "Pembayaran berhasil",
+        body: detail,
+        href: "/account",
+        dedupe: "payment:" + order.id,
+      });
+      if (order.kind === "template" && order.template_id) {
+        const template = await ctx.admin
+          .from("templates")
+          .select("owner_id,title")
+          .eq("id", order.template_id)
+          .maybeSingle();
+        if (template.data && template.data.owner_id !== order.user_id)
+          await notifyUser(ctx, template.data.owner_id, {
+            kind: "marketplace",
+            title: "Template terjual",
+            body: `"${template.data.title}" dibeli. Catat pendapatannya di halaman akun.`,
+            href: "/account",
+            dedupe: "sale:" + order.id,
+          });
+      }
+    } else if (applied === "refunded" || applied === "already_refunded") {
+      await notifyUser(ctx, order.user_id, {
+        kind: "payment",
+        title: "Pembayaran dibatalkan penyedia",
+        body: `Penyedia membatalkan atau menarik pembayaran pesanan ${order.sku}. Kredit, template, dan bonus terkait disesuaikan mengikuti status provider.`,
+        href: "/account",
+        dedupe: "refund:" + order.id,
+      });
+    }
+    return applied;
   }
   app.post(
     "/api/orders/:orderId/refresh",

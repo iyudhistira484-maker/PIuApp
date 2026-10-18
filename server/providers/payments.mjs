@@ -1,33 +1,48 @@
 import { createHash } from "node:crypto";
 import { HttpError, equal, appOrigin } from "../lib/core.mjs";
-export const products = {
-  pro: {
-    kind: "plan",
-    plan: "Pro",
-    amount: 199000,
-    credits: 600,
-    label: "PiwuApp Pro · 30 hari",
-  },
-  team: {
-    kind: "plan",
-    plan: "Team",
-    amount: 499000,
-    credits: 2000,
-    label: "PiwuApp Team · 30 hari",
-  },
-  credits100: {
-    kind: "topup",
-    amount: 49000,
-    credits: 100,
-    label: "Top-up 100 kredit",
-  },
-  credits500: {
-    kind: "topup",
-    amount: 199000,
-    credits: 500,
-    label: "Top-up 500 kredit",
-  },
-};
+import {
+  PLAN_PERIOD_DAYS,
+  mergePlans,
+  mergeTopups,
+} from "../../shared/credits.mjs";
+// The credit ladder: how many credits a package grants follows its price, so
+// a bigger package is never more expensive per credit. The plan prices are
+// unchanged; only the credits they grant were raised to match them.
+// Pro  Rp 199.000 / 1.500 = Rp 133 per credit
+// Team Rp 499.000 / 4.500 = Rp 111 per credit
+// Top-up Rp 49.000 / 300  = Rp 163, Rp 199.000 / 1.400 = Rp 142 (top-up is the
+// flexible way to buy, so it stays the pricier per-credit option on purpose).
+// Plan credits roll over but expire 2 months after they are granted; top-ups
+// are valid 12 months. tests/credits-model.test.ts reads this table;
+// shared/credits.mjs explains the durations these numbers produce.
+//
+// The administrator may change the price and the credits per package from the
+// admin panel. The catalogue is therefore a function of the saved overrides;
+// `products` is the default catalogue used when no override exists. Nothing
+// else changes: daily allowance, monthly cap and expiry are database policy.
+export function productCatalog(overrides = {}) {
+  const catalog = {};
+  for (const plan of mergePlans(overrides)) {
+    if (!plan.sku) continue;
+    catalog[plan.sku] = {
+      kind: "plan",
+      plan: plan.plan,
+      amount: plan.monthly,
+      credits: plan.credits,
+      label: `PiwuApp ${plan.plan} · ${PLAN_PERIOD_DAYS} hari`,
+    };
+  }
+  for (const topup of mergeTopups(overrides)) {
+    catalog[topup.sku] = {
+      kind: "topup",
+      amount: topup.amount,
+      credits: topup.credits,
+      label: `Top-up ${new Intl.NumberFormat("id-ID").format(topup.credits)} kredit`,
+    };
+  }
+  return catalog;
+}
+export const products = productCatalog();
 export function midtransSignature(body, key) {
   if (
     !body ||

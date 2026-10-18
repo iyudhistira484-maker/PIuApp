@@ -27,6 +27,41 @@ test("admin searches server-wide, retains filters on failure, paginates, exports
             coordinationSchema: "schema_missing",
             sandboxRouting: "sticky-owner-lease",
           },
+          search: {
+            web: false,
+            provider: "none",
+            rounds: 2,
+            available: false,
+            selected: "tavily",
+            selectedAvailable: false,
+            disabled: false,
+            keyConfigured: false,
+            locale: { country: "", language: "" },
+            cache: {
+              mode: "process",
+              entries: 3,
+              ttlMinutes: 15,
+              stats: {
+                hits: 2,
+                memoryHits: 2,
+                sharedHits: 0,
+                writes: 3,
+                errors: 0,
+              },
+            },
+            jobs: {
+              jobs: 1,
+              running: 0,
+              ready: 1,
+              ttlMinutes: 360,
+              max: 20,
+              durable: true,
+              stored: 1,
+              errors: 0,
+            },
+            notice:
+              "Status konfigurasi, bukan bukti panggilan vendor berhasil. Untuk uji nyata jalankan npm run verify:search di server.",
+          },
           liveVerified: false,
           notice:
             "Probe read-only: bukan bukti transaksi atau kelulusan pentest.",
@@ -109,4 +144,21 @@ test("admin searches server-wide, retains filters on failure, paginates, exports
   await expect(
     page.getByText("Belum terverifikasi — periksa migration 007"),
   ).toBeVisible();
+  // Search status is read-only, honest about the missing key, and shows the
+  // cache mode without ever printing a credential.
+  await expect(
+    page.getByText("Kunci belum ada", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("belum diisi (SEARCH_API_KEY)", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/per-proses \(migration 009/)).toBeVisible();
+  await expect(page.getByText(/2 hit/)).toBeVisible();
+  // Background jobs: in-memory count, and how many answers really survive a
+  // restart in the shared table. Never a bare "stored" number.
+  await expect(page.getByText(/1 di memori · 0 berjalan/)).toBeVisible();
+  await expect(page.getByText(/1 tahan restart \(tabel 009\)/)).toBeVisible();
+  await expect(page.getByText(/simpan 360 menit/)).toBeVisible();
+  const diagnosticsText = await page.locator("#admin-content").innerText();
+  expect(diagnosticsText).not.toContain("SEARCH_API_KEY=");
 });

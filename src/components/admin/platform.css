@@ -51,3 +51,145 @@
   padding: 15px;
   color: #657954;
 }
+/* Per-account notifications: one bell in the dashboard and one in the workspace
+   top bar. The panel is light in both IDE themes on purpose: it carries text,
+   not code, and must stay readable over a dark editor. */
+.notif-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.notif-button {
+  position: relative;
+}
+.notif-badge {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #c9553d;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
+}
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  width: 340px;
+  max-height: 430px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #dce3d6;
+  border-radius: 10px;
+  box-shadow: 0 18px 45px rgba(20, 35, 15, 0.18);
+  color: #1f2a1b;
+  text-align: left;
+}
+.notif-panel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf0ea;
+}
+.notif-panel header strong {
+  font-size: 12.5px;
+}
+.notif-panel header button,
+.notif-panel footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d7dfd0;
+  border-radius: 6px;
+  background: #fff;
+  color: #40543a;
+  font-size: 10.5px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.notif-panel header button:disabled,
+.notif-panel footer button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.notif-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.notif-panel li {
+  border-bottom: 1px solid #f0f2ee;
+}
+.notif-panel li.unread {
+  background: #f4f8f0;
+}
+.notif-panel li a {
+  display: block;
+  padding: 12px 14px;
+  color: inherit;
+  text-decoration: none;
+}
+.notif-panel li a:hover {
+  background: #eef4e9;
+}
+.notif-panel li strong {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.4;
+  padding-right: 12px;
+}
+.notif-panel li.unread strong::after {
+  content: "";
+  float: right;
+  width: 6px;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #5d8f4b;
+}
+.notif-panel li p {
+  margin: 3px 0;
+  color: #4b5845;
+  font-size: 11.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.notif-panel li small {
+  color: #7c8874;
+  font-size: 10px;
+}
+.notif-empty,
+.notif-error {
+  margin: 0;
+  padding: 14px;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.notif-error {
+  color: #a33b2c;
+}
+.notif-panel footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px;
+}
+@media (max-width: 640px) {
+  .notif-panel {
+    position: fixed;
+    top: 58px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-height: 70vh;
+  }
+}

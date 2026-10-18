@@ -1,0 +1,17 @@
+# Files prettier must not touch:
+#  - the Studio plugin ships as Luau and as an .rbxmx bundle whose bytes are
+#    compared against the bundle generator (`npm run plugin:check`), so
+#    reformatting either one fails the check or, worse, changes what users
+#    install by hand;
+#  - build output and local artefacts are not source;
+#  - the SQL installer is checked by its own test, not by prettier.
+public/plugins/*.luau
+public/plugins/*.rbxmx
+dist
+node_modules
+coverage
+.artifacts
+test-results
+playwright-report
+supabase/*.sql
+package-lock.json

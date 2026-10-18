@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Plus,
   Mic,
@@ -8,7 +8,6 @@ import {
   ListChecks,
   Paperclip,
   X,
-  Sparkles,
 } from "lucide-react";
 import { useStore } from "../lib/store";
 type Props = {
@@ -33,7 +32,29 @@ export default function PromptBox({
   const [attachment, setAttachment] = useState("");
   const [listening, setListening] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const modeWrap = useRef<HTMLDivElement>(null);
+  const modeButton = useRef<HTMLButtonElement>(null);
   const notify = useStore((s) => s.notify);
+  useEffect(() => {
+    if (!menu) return;
+    // Like the landing navigation: the composer menu closes on outside click
+    // and on Escape, which also hands focus back to its trigger.
+    const outside = (event: PointerEvent) => {
+      if (!modeWrap.current?.contains(event.target as Node)) setMenu(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setMenu(false);
+      modeButton.current?.focus();
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [menu]);
   function voice() {
     const Recognition =
       (window as any).SpeechRecognition ||
@@ -114,11 +135,13 @@ export default function PromptBox({
             }}
           />
           <span className="tool-divider" />
-          <div className="mode-wrap">
+          <div className="mode-wrap" ref={modeWrap}>
             <button
               className="mode-button"
+              ref={modeButton}
               onClick={() => setMenu(!menu)}
               aria-expanded={menu}
+              aria-haspopup="true"
             >
               {mode === "Builder" ? (
                 <Hammer size={14} />

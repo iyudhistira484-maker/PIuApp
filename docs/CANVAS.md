@@ -26,13 +26,13 @@ Setiap frame menjalankan instance preview sendiri, sehingga state aplikasi di fr
 
 ## Shortcut workbench
 
-| Shortcut | Fungsi |
-|---|---|
-| Ctrl/⌘+K | Cari perintah/file |
-| Ctrl/⌘+P | Buka file |
-| Ctrl/⌘+B | Buka/tutup explorer |
-| Ctrl/⌘+J | Buka/tutup panel terminal |
-| Ctrl/⌘+Shift+F | Pencarian global |
-| Ctrl/⌘+. | Mode fokus |
+| Shortcut       | Fungsi                    |
+| -------------- | ------------------------- |
+| Ctrl/⌘+K       | Cari perintah/file        |
+| Ctrl/⌘+P       | Buka file                 |
+| Ctrl/⌘+B       | Buka/tutup explorer       |
+| Ctrl/⌘+J       | Buka/tutup panel terminal |
+| Ctrl/⌘+Shift+F | Pencarian global          |
+| Ctrl/⌘+.       | Mode fokus                |
 
 Di layar kecil, explorer dan asisten menjadi drawer yang dapat dibuka melalui toolbar. Tidak ada perubahan terhadap autentikasi, provider, billing atau RPC cloud untuk fitur ini.

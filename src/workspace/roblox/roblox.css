@@ -229,6 +229,33 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+.rb-bridge .rb-primary {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 5px;
+  background: var(--ide-success-bg, #2b7069);
+  color: var(--ide-text, #fff);
+  font-weight: 600;
+  text-decoration: none;
+}
+.rb-bridge .rb-steps {
+  margin: 16px 0;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ide-text, #c2d0d3);
+}
+.rb-bridge .rb-steps li {
+  margin: 6px 0;
+}
+.rb-bridge code {
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--ide-input, #12191e);
+  font-family: monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
 .rb-studio-tree {
   border: 1px solid var(--ide-border, #34454d);
   margin-top: 20px;
@@ -746,4 +773,45 @@
   .rb-note span:last-child {
     display: none;
   }
+}
+/* GLB export with an atlas built from a stored project photo. */
+.rb-glb {
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid #2b3a4d;
+  border-radius: 6px;
+  display: grid;
+  gap: 6px;
+}
+.rb-glb > summary {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.rb-glb p {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.6;
+  color: #93a3b5;
+}
+.rb-glb label {
+  display: grid;
+  gap: 3px;
+  font-size: 8px;
+}
+.rb-glb select {
+  width: 100%;
+}
+.rb-glb button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.rb-glb button[disabled] {
+  opacity: 0.55;
+}
+.rb-glb-note {
+  font-size: 8px;
+  line-height: 1.6;
+  color: #7f9188;
 }

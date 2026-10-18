@@ -21,6 +21,7 @@ import {
 import type { Dataset, DatasetMeta, DataColumn } from "../lib/data/schema";
 import { saveDraft, dropDraft, listDrafts } from "../lib/data/drafts";
 import type { AccessRole } from "../lib/cloud/types";
+import AppApiPanel from "./AppApiPanel";
 import "./data.css";
 export default function CloudDataPanel({
   projectId,
@@ -265,7 +266,7 @@ export default function CloudDataPanel({
       <div className="ws-notice">
         Data tersimpan di Supabase dan hanya dapat diakses anggota project. Ini
         bukan SQL console, tabel fisik per kolom, atau backend publik aplikasi
-        hasil publish. Draft browser tidak terenkripsi; jangan masukkan secret.
+        hasil ekspor. Draft browser tidak terenkripsi; jangan masukkan secret.
       </div>
       {busy && <p role="status">Memuat atau menyimpan data…</p>}
       {error && (
@@ -714,6 +715,7 @@ export default function CloudDataPanel({
           </div>
         </>
       )}
+      <AppApiPanel projectId={projectId} role={role} />
     </section>
   );
 }

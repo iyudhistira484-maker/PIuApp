@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import type { RobloxScene, SceneObject } from "../../lib/roblox/scene";
+import { meshPhotoColors } from "../../lib/roblox/scene";
 export type ViewTool = "select" | "translate" | "rotate" | "scale";
 export default function SceneViewport({
   scene,
@@ -97,18 +98,40 @@ export default function SceneViewport({
           geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 24);
           geometry.rotateZ(Math.PI / 2);
         } else if (item.kind === "mesh" && item.mesh) {
+          const photo = item.mesh.groups?.length
+            ? meshPhotoColors(item.mesh, item.color)
+            : null;
           geometry = new THREE.BufferGeometry();
-          geometry.setAttribute(
-            "position",
-            new THREE.Float32BufferAttribute(item.mesh.vertices.flat(), 3),
-          );
-          geometry.setIndex(item.mesh.faces.flat());
+          if (photo) {
+            // Photo-coloured mesh: one flat colour per face, so the surface reads
+            // like the photo instead of one flat object colour. The geometry is
+            // expanded (a shared vertex cannot hold two face colours).
+            geometry.setAttribute(
+              "position",
+              new THREE.Float32BufferAttribute(photo.position, 3),
+            );
+            geometry.setAttribute(
+              "color",
+              new THREE.Float32BufferAttribute(photo.color, 3),
+            );
+          } else {
+            geometry.setAttribute(
+              "position",
+              new THREE.Float32BufferAttribute(item.mesh.vertices.flat(), 3),
+            );
+            geometry.setIndex(item.mesh.faces.flat());
+          }
           geometry.computeVertexNormals();
         } else geometry = new THREE.BoxGeometry(1, 1, 1);
         obj = new THREE.Mesh(
           geometry,
           new THREE.MeshStandardMaterial({
             color: item.color,
+            // A grouped mesh carries its own per-face colours; multiplying them
+            // by `color` would darken the photo's colours, so the base stays
+            // white for those.
+            ...(item.mesh?.groups?.length ? { color: 0xffffff } : {}),
+            vertexColors: Boolean(item.mesh?.groups?.length),
             roughness: 0.7,
             metalness: 0.05,
             side: THREE.DoubleSide,

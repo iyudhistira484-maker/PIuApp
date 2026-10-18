@@ -130,15 +130,13 @@ export function startWorkspaceSync(
                   "Sinkronisasi gagal. Edit masih tersimpan di perangkat ini.",
                 );
           apply(() =>
-            useStore
-              .getState()
-              .markSync(scope, p.id, {
-                phase:
-                  error.code === "conflict" || error.code === "permission"
-                    ? "conflict"
-                    : "error",
-                error: error.message,
-              }),
+            useStore.getState().markSync(scope, p.id, {
+              phase:
+                error.code === "conflict" || error.code === "permission"
+                  ? "conflict"
+                  : "error",
+              error: error.message,
+            }),
           );
           if (error.code === "conflict" || error.code === "permission")
             await pull(signal);

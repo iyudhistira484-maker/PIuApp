@@ -4,10 +4,27 @@ import { IDEThemeProvider, useIDETheme } from "../workspace/IDETheme";
 import { SCENE_PATH, validateSceneChanges } from "../lib/roblox/scene";
 import "../workspace/roblox/roblox.css";
 import { readAttachment } from "../services/api";
+import { photoSamples } from "../lib/photo-palette";
+import type { PhotoPalette } from "../lib/photo-palette";
+import {
+  PROJECT_PHOTOS_MAX,
+  photoFromAttachment,
+  photoSize,
+} from "../lib/photo-assets";
+import type { ProjectPhotoMeta } from "../lib/photo-assets";
+import {
+  listProjectPhotos,
+  readProjectPhoto,
+  removeProjectPhoto,
+  saveProjectPhotos,
+} from "../services/project-photos";
 import type { Attachment } from "../services/api";
 import { saveRecording } from "../services/recordings";
 import type { ReplayEvent } from "../services/recordings";
-import Presence from "../components/services/Presence";
+import Presence, { useProjectPresence } from "../components/services/Presence";
+import { useCollabText } from "../lib/collab/useCollabText";
+import type { CodeEditorApi } from "../workspace/CodeEditor";
+import { NotificationBell } from "../components/admin/Platform";
 import {
   lazy,
   Suspense,
@@ -17,7 +34,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   Sun,
   Moon,
@@ -38,7 +60,7 @@ import {
   Plug,
   GitBranch,
   Settings,
-  Crown,
+  CreditCard,
   Monitor,
   Tablet,
   Smartphone,
@@ -49,7 +71,8 @@ import {
   PanelBottom,
   PanelLeftClose,
   PanelRightClose,
-  Sparkles,
+  Wrench,
+  PenLine,
   Check,
   Copy,
   Undo2,
@@ -86,21 +109,60 @@ import {
   PanelRight,
 } from "lucide-react";
 import { useStore } from "../lib/store";
-import type { Mode, Model, Project } from "../lib/types";
+import type {
+  Mode,
+  Model,
+  Project,
+  ResearchStep,
+  SourceRef,
+} from "../lib/types";
+import { researchStepLabel } from "../lib/research-step";
+import {
+  forgetPendingJob,
+  lostJobs,
+  readClaimedJobs,
+  readPendingJobs,
+  rememberClaimedJob,
+  rememberPendingJob,
+} from "../lib/research-jobs";
 import { Logo, Modal } from "../components/ui";
 import { compilePreview } from "../lib/preview";
 import { scopeFor } from "../lib/cloud/types";
 import { StorageStatus } from "../components/storage/StorageStatus";
-import { streamAI } from "../lib/ai";
+import {
+  AI_TIERS,
+  claimResearchJob,
+  estimateCredits,
+  fetchAiModels,
+  fetchResearchJobs,
+  streamAI,
+} from "../lib/ai";
+import type { AiModelCatalog, ResearchJob } from "../lib/ai";
+import AiModelPicker from "../components/ai/AiModelPicker";
+import type { CatalogStatus } from "../components/ai/AiModelPicker";
 import FileExplorer, { FileIcon } from "../workspace/FileExplorer";
 import PlanPanel from "../workspace/PlanPanel";
 import "../workspace/workspace.css";
 import "../workspace/workbench.css";
 import "../workspace/theme.css";
+// Remembered per account, like the IDE theme. Tier presets stay valid even
+// when the provider list cannot be read.
+const MODEL_PREFERENCE_KEY = "piwu-ai-model-v1";
+// Research mode is remembered per account too, so a user who wants sources
+// does not have to switch it on again in every session.
+const RESEARCH_PREFERENCE_KEY = "piwu-ai-research-v1";
+const readStoredResearch = (scope: string): boolean =>
+  workspaceStorage.getItem(`${RESEARCH_PREFERENCE_KEY}:${scope}`) === "1";
+const readStoredModel = (scope: string): Model => {
+  const stored = workspaceStorage.getItem(`${MODEL_PREFERENCE_KEY}:${scope}`);
+  if (typeof stored !== "string" || !stored) return "Otomatis";
+  return stored.length <= 100 ? stored : "Otomatis";
+};
 const CanvasPanel = lazy(() => import("../workspace/CanvasPanel"));
 const CodeEditor = lazy(() => import("../workspace/CodeEditor"));
 const ServicePanel = lazy(() => import("../components/services/ServicePanel"));
 const ServiceHub = lazy(() => import("../components/services/ServiceHub"));
+const GitHubPanel = lazy(() => import("../components/services/GitHubPanel"));
 const RecordingPanel = lazy(
   () => import("../components/services/RecordingPanel"),
 );
@@ -125,6 +187,11 @@ const icons = [
   { id: "github", icon: GitBranch, label: "GitHub" },
   { id: "security", icon: ShieldCheck, label: "Pemeriksaan kualitas" },
 ];
+// Only show "kueri …" when the round really merged several queries; on a single
+// search it would just repeat the same string on every row.
+const distinctQueries = (sources?: SourceRef[]) =>
+  new Set((sources || []).map((s) => s.query).filter(Boolean)).size;
+
 export default function Workspace() {
   return (
     <IDEThemeProvider>
@@ -162,10 +229,23 @@ function WorkspaceRoute() {
     );
   return <WorkspaceContent key={id} project={project} />;
 }
+/** Panel names a link may ask for, with the title the modal shows. */
+const DIALOG_TITLES: Record<string, string> = {
+  settings: "Pengaturan workspace",
+  invite: "Bangun bersama tim",
+  export: "Ekspor kode project",
+  services: "Layanan project",
+  integrations: "Integrasi",
+  comments: "Komentar pada elemen",
+  recording: "Rekaman & pemutar sesi",
+  credits: "Paket & penggunaan",
+};
+
 function WorkspaceContent({ project }: { project: Project }) {
   const { theme, setTheme, persistenceError } = useIDETheme();
   const store = useStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const id = project.id;
   const kind = project.kind || "webapp";
   const initialFile =
@@ -205,10 +285,19 @@ function WorkspaceContent({ project }: { project: Project }) {
   const [refresh, setRefresh] = useState(0);
   const [input, setInput] = useState("");
   const [mode, setMode] = useState<Mode>(store.pendingMode || "Builder");
-  const [model, setModel] = useState<Model>("Otomatis");
+  const modelScope = store.user?.id || "demo";
+  const [model, setModel] = useState<Model>(() => readStoredModel(modelScope));
+  const [research, setResearch] = useState<boolean>(() =>
+    readStoredResearch(modelScope),
+  );
+  const [catalog, setCatalog] = useState<AiModelCatalog | null>(null);
+  const [catalogStatus, setCatalogStatus] = useState<CatalogStatus>("idle");
+  const [catalogError, setCatalogError] = useState("");
   const [chatTab, setChatTab] = useState("Chat");
   const [busy, setBusy] = useState(false);
   const [streaming, setStreaming] = useState("");
+  // Latest step reported by the research loop, shown while the turn runs.
+  const [researchStep, setResearchStep] = useState<ResearchStep | null>(null);
   const [error, setError] = useState("");
   const [aiError, setAiError] = useState("");
   const [logs, setLogs] = useState<string[]>(["Preview lokal siap."]);
@@ -219,6 +308,17 @@ function WorkspaceContent({ project }: { project: Project }) {
   const [reviewPath, setReviewPath] = useState("");
   const [useReview, setUseReview] = useState(true);
   const [dialog, setDialog] = useState("");
+
+  // A dashboard link may name the panel it wants (`?dialog=services&services=comments`),
+  // so an item like "3 komentar belum diselesaikan" opens where it can be fixed.
+  // Only the names the modal already knows are accepted; anything else is ignored.
+  useEffect(() => {
+    const asked = searchParams.get("dialog") || "";
+    if (Object.prototype.hasOwnProperty.call(DIALOG_TITLES, asked))
+      setDialog(asked);
+    // First render only: after that the user owns which panel is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [projectMenu, setProjectMenu] = useState(false);
   const [newName, setNewName] = useState(project.name);
   const [query, setQuery] = useState("");
@@ -228,6 +328,10 @@ function WorkspaceContent({ project }: { project: Project }) {
     "unavailable",
   );
   const [summaryOpen, setSummaryOpen] = useState("");
+  const [sourcesOpen, setSourcesOpen] = useState("");
+  // True while a research turn this browser started is still running on the
+  // server, so the composer can say so instead of looking idle.
+  const [bgResearch, setBgResearch] = useState(false);
   const [comment, setComment] = useState("");
   const [designText, setDesignText] = useState("");
   const [designColor, setDesignColor] = useState("#2857aa");
@@ -238,7 +342,55 @@ function WorkspaceContent({ project }: { project: Project }) {
   const [packageQuery, setPackageQuery] = useState("");
   const [line, setLine] = useState<number>();
   const [cursor, setCursor] = useState({ lineNumber: 1, column: 1 });
-  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const presence = useProjectPresence(id, activeFile, cursor);
+  const editorPeers = useMemo(
+    () =>
+      presence.peers
+        .filter((peer) => peer.file === (reviewPath || activeFile))
+        .map((peer) => ({ id: peer.id, name: peer.name, line: peer.line })),
+    [presence.peers, reviewPath, activeFile],
+  );
+  // Merge characters only when another member is actually on this file and
+  // the editor is editable. The merged text goes through store.writeFile, so
+  // autosave, revisions and conflict detection are unchanged; with no peer the
+  // hook stays off and costs nothing.
+  const editorApi = useRef<CodeEditorApi | null>(null);
+  // Only a peer who says they are on this file can merge with it; other files
+  // in the same project must not receive this tab's ops.
+  const collabPeers = editorPeers.length;
+  const collab = useCollabText({
+    transport: presence.transport,
+    path: activeFile,
+    value: project.files[activeFile] || "",
+    peers: collabPeers,
+    // Review diffs do not end the session: doing so would force a fresh base
+    // and report a false "teks berbeda" when the review panel closes.
+    editable: !readOnly && Boolean(activeFile),
+    joined: presence.state === "live",
+    onMerged: (text, mergedPath) => {
+      if (mergedPath !== activeFile) return;
+      // Reach the buffer first: a keystroke processed after this callback must
+      // already see the merged text, otherwise it would overwrite it.
+      editorApi.current?.apply(text);
+      store.writeFile(id, mergedPath, text);
+    },
+  });
+  // Up to three attachments, so a photo of the object can travel with the brief
+  // that describes it. The server numbers the photos in this order.
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  // Colour grids sampled from the attached photos, in the same order as the
+  // photos themselves. A photo whose pixels could not be read is kept as null,
+  // so the server can say "no colour sample for photo 2" instead of guessing.
+  const [palettes, setPalettes] = useState<(PhotoPalette | null)[]>([]);
+  // Small redraws of those same photos, kept so a stored photo can be listed
+  // without decoding it again.
+  const [thumbnails, setThumbnails] = useState<(string | null)[]>([]);
+  // Photos this project already holds, in this browser. Sorted newest first.
+  const [projectPhotos, setProjectPhotos] = useState<ProjectPhotoMeta[]>([]);
+  // The photo opened large, to compare against the model it produced. The
+  // thumbnail shows immediately; the full bytes follow once they are read.
+  const [photoView, setPhotoView] = useState<ProjectPhotoMeta | null>(null);
+  const [photoViewSrc, setPhotoViewSrc] = useState<string | null>(null);
   const [references, setReferences] = useState<string[]>([]);
   const [scans, setScans] = useState<
     { title: string; file: string; level: string }[] | null
@@ -259,6 +411,10 @@ function WorkspaceContent({ project }: { project: Project }) {
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const started = useRef(false);
+  // Requests already being collected, so two visibility events cannot claim the
+  // same background answer twice.
+  const collecting = useRef(new Set<string>());
+  const bgInformed = useRef(false);
   const record = useCallback(
     (label: string) => {
       if (recording)
@@ -293,6 +449,59 @@ function WorkspaceContent({ project }: { project: Project }) {
     if (window.innerWidth <= 850) setLeft(false);
     setLine(line);
     setReviewPath("");
+  };
+  const account = useStore((s) => scopeFor(s.user));
+  const refreshProjectPhotos = useCallback(async () => {
+    try {
+      setProjectPhotos(await listProjectPhotos(account, id));
+    } catch {
+      // A browser without IndexedDB (private mode) simply has no stored photos;
+      // the panel stays empty instead of breaking the workspace.
+      setProjectPhotos([]);
+    }
+  }, [account, id]);
+  useEffect(() => {
+    void refreshProjectPhotos();
+  }, [refreshProjectPhotos]);
+  // Puts a stored photo back into the composer, with the colours that were
+  // sampled from those exact bytes — so the next model is built from the photo
+  // again, not from a recollection of it.
+  const reuseProjectPhoto = async (photo: ProjectPhotoMeta) => {
+    if (attachments.length >= 3) {
+      store.notify("Maksimal 3 lampiran per pesan. Hapus salah satu dulu.");
+      return;
+    }
+    const full = await readProjectPhoto(account, id, photo.id);
+    if (!full) {
+      store.notify("Foto itu sudah tidak ada di penyimpanan browser ini.");
+      await refreshProjectPhotos();
+      return;
+    }
+    let palette = full.palette ?? null;
+    if (!palette) {
+      const samples = await photoSamples(full);
+      palette = samples.palette;
+    }
+    setAttachments((list) => [
+      ...list,
+      { name: full.name, mime: full.mime, data: full.data },
+    ]);
+    setPalettes((list) => [...list, palette]);
+    setThumbnails((list) => [...list, full.thumbnail ?? null]);
+    store.notify(`Foto ${full.name} dipakai lagi sebagai lampiran.`);
+  };
+  const openProjectPhoto = async (photo: ProjectPhotoMeta) => {
+    setPhotoView(photo);
+    setPhotoViewSrc(photo.thumbnail || null);
+    const full = await readProjectPhoto(account, id, photo.id);
+    if (full) setPhotoViewSrc(`data:${full.mime};base64,${full.data}`);
+  };
+  const dropProjectPhoto = async (photo: ProjectPhotoMeta) => {
+    await removeProjectPhoto(account, id, photo.id).catch(() => undefined);
+    setPhotoView((open) => (open?.id === photo.id ? null : open));
+    setPhotoViewSrc(null);
+    await refreshProjectPhotos();
+    store.notify("Aset foto dihapus dari project ini.");
   };
   const addMessage = (
     role: "user" | "assistant",
@@ -339,6 +548,46 @@ function WorkspaceContent({ project }: { project: Project }) {
       .catch(() => setInitializing(false));
     return () => controller.abort();
   }, []);
+  const loadModels = useCallback((refresh = false) => {
+    setCatalogStatus("loading");
+    setCatalogError("");
+    return fetchAiModels({ refresh })
+      .then((next) => {
+        setCatalog(next);
+        setCatalogStatus("ready");
+        // A remembered model that the API key no longer offers would be
+        // rejected by the server, so fall back to the automatic preset.
+        setModel((current) =>
+          (AI_TIERS as readonly string[]).includes(current) ||
+          !current ||
+          next.models.includes(current)
+            ? current
+            : "Otomatis",
+        );
+      })
+      .catch((e: unknown) => {
+        setCatalog(null);
+        setCatalogStatus("error");
+        setCatalogError(
+          e instanceof Error
+            ? e.message
+            : "Daftar model provider tidak dapat dibaca.",
+        );
+      });
+  }, []);
+  useEffect(() => {
+    if (provider !== "configured") return;
+    void loadModels();
+  }, [provider, loadModels]);
+  useEffect(() => {
+    workspaceStorage.setItem(`${MODEL_PREFERENCE_KEY}:${modelScope}`, model);
+  }, [model, modelScope]);
+  useEffect(() => {
+    workspaceStorage.setItem(
+      `${RESEARCH_PREFERENCE_KEY}:${modelScope}`,
+      research ? "1" : "0",
+    );
+  }, [research, modelScope]);
   useEffect(() => {
     const fn = (e: MessageEvent) => {
       if (e.source !== previewRef.current?.contentWindow) return;
@@ -362,6 +611,9 @@ function WorkspaceContent({ project }: { project: Project }) {
     setError("");
   }, [project.files, refresh]);
   useEffect(() => {
+    // The empty-state welcome is taller than the pane; auto-scrolling to the
+    // end on mount would push its heading out of view.
+    if (project.messages.length === 0) return;
     chatEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [streaming, project.messages.length]);
   const send = useCallback(
@@ -391,6 +643,7 @@ function WorkspaceContent({ project }: { project: Project }) {
       setBusy(true);
       setAiError("");
       setStreaming("");
+      setResearchStep(null);
       setChatTab("Chat");
       const contextual = selected
         ? text +
@@ -406,31 +659,97 @@ function WorkspaceContent({ project }: { project: Project }) {
       record("Pesan: " + text.slice(0, 80));
       const controller = new AbortController();
       abortRef.current = controller;
+      // The id travels with the request so a research turn that finished after
+      // the tab closed can be claimed from the background store.
+      const requestId = crypto.randomUUID();
+      // Tracked until the answer is in hand, so a run that dies with the server
+      // is reported honestly instead of silently disappearing.
+      if (research) rememberPendingJob(id, requestId);
       try {
         const result = await streamAI({
           projectId: id,
-          attachments: attachment ? [attachment] : [],
+          attachments,
+          // One slot per photo, in photo order: the server indexes them by the
+          // photo number the model cites.
+          photoPalettes: attachments
+            .map((file, at) =>
+              file.mime.startsWith("image/") ? (palettes[at] ?? null) : null,
+            )
+            .filter((_, at) => attachments[at].mime.startsWith("image/")),
           references,
           prompt: contextual,
           files: project.files,
           mode: currentMode,
           model,
+          research,
+          requestId,
           onToken: setStreaming,
+          onStep: setResearchStep,
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
         setProviderVerified(true);
-        setAttachment(null);
+        const answerId = crypto.randomUUID();
+        // The photos of this turn are kept with the project before the composer
+        // is cleared, so the finished model can be compared against the picture
+        // it came from and the same photo can be used in a later session.
+        const answered = attachments.filter((file: Attachment) =>
+          file.mime.startsWith("image/"),
+        );
+        if (answered.length)
+          void saveProjectPhotos(
+            account,
+            id,
+            answered.flatMap((file: Attachment) => {
+              const at = attachments.indexOf(file);
+              try {
+                return [
+                  photoFromAttachment(file, {
+                    palette: palettes[at] ?? null,
+                    thumbnail: thumbnails[at] ?? undefined,
+                    from: answerId,
+                  }),
+                ];
+              } catch {
+                // A file the store refuses is simply not kept: the turn already
+                // succeeded, and nothing is claimed about a photo that was not
+                // stored.
+                return [];
+              }
+            }),
+          )
+            .then(async ({ saved, dropped }) => {
+              await refreshProjectPhotos();
+              if (saved)
+                store.notify(
+                  dropped.length
+                    ? `${saved} foto disimpan sebagai aset project; ${dropped.length} foto terlama dihapus (batas ${PROJECT_PHOTOS_MAX} foto / 16 MB).`
+                    : `${saved} foto disimpan sebagai aset project (di browser ini).`,
+                );
+            })
+            .catch(() => undefined);
+        setAttachments([]);
+        setPalettes([]);
+        setThumbnails([]);
         setReferences([]);
         store.addMessage(id, {
-          id: crypto.randomUUID(),
+          id: answerId,
           role: "assistant",
           content: result.content,
           files: result.files ? Object.keys(result.files) : undefined,
           summary: result.summary,
+          ops: result.ops,
+          sources: result.sources,
+          research: result.research,
+          tools: result.tools,
+          notes: result.notes,
+          model: result.model,
           mode: currentMode,
           at: Date.now(),
         });
+        // The sources behind this answer are open straight away; the header
+        // stays clickable to fold them back.
+        if (result.sources?.length || result.research) setSourcesOpen(answerId);
         if (currentMode === "Plan") {
           store.updateProject(id, {
             plan: result.plan!,
@@ -478,6 +797,11 @@ function WorkspaceContent({ project }: { project: Project }) {
           }
           record("Perubahan file: " + Object.keys(result.files).join(", "));
         }
+        if (research) {
+          void claimResearchJob(id, requestId);
+          rememberClaimedJob(id, requestId);
+          forgetPendingJob(id, requestId);
+        }
       } catch (e) {
         setInput((current) => current || text);
         if (!controller.signal.aborted)
@@ -487,6 +811,7 @@ function WorkspaceContent({ project }: { project: Project }) {
       } finally {
         setBusy(false);
         setStreaming("");
+        setResearchStep(null);
         abortRef.current = null;
       }
     },
@@ -503,10 +828,128 @@ function WorkspaceContent({ project }: { project: Project }) {
       useReview,
       id,
       record,
-      attachment,
+      attachments,
+      palettes,
       references,
     ],
   );
+  // Research keeps running on the server after the tab is closed. The finished
+  // answer is collected here exactly once — when the project is opened again or
+  // when the tab becomes visible — and shown like any other reply.
+  useEffect(() => {
+    if (initializing || provider !== "configured") return;
+    if (store.sync[id]?.phase !== "synced") return;
+    if (!store.user || store.user.demo) return;
+    let stopped = false;
+    let timer: number | undefined;
+    const collect = async () => {
+      const jobs = await fetchResearchJobs(id);
+      if (stopped) return;
+      // A run that is still going is reported as such and checked again, so the
+      // answer lands in the chat without a reload — the reason the job store
+      // exists at all.
+      const running = jobs.some((job) => job.state === "running");
+      setBgResearch(running);
+      if (running && !bgInformed.current) {
+        bgInformed.current = true;
+        store.notify(
+          "Riset yang Anda tinggalkan masih berjalan di server. Hasilnya muncul di chat begitu selesai; bila proses server dimulai ulang sebelum selesai, jawaban itu tidak bisa diambil lagi dan kreditnya dipulihkan.",
+        );
+      }
+      if (running && !stopped) timer = window.setTimeout(collect, 5000);
+      // A run this browser started that the server no longer knows about: the
+      // process restarted before the answer was finished, or the job list was
+      // cleared. Neither can be recovered, so it is said once (never while the
+      // job is still listed, and never for a turn that was just sent).
+      for (const lost of lostJobs(
+        readPendingJobs(id),
+        jobs.map((job) => job.requestId),
+      )) {
+        forgetPendingJob(id, lost);
+        store.notify(
+          "Riset yang Anda tinggalkan tidak lagi tersedia di server (proses server berhenti atau daftar job-nya dibersihkan), jadi jawabannya tidak bisa diambil. Kredit ronde yang tidak selesai dipulihkan otomatis — silakan kirim ulang pertanyaannya.",
+        );
+      }
+      for (const job of jobs) {
+        if (job.state === "running") continue;
+        if (collecting.current.has(job.requestId)) continue;
+        if (readClaimedJobs(id).includes(job.requestId)) continue;
+        collecting.current.add(job.requestId);
+        const taken = await claimResearchJob(id, job.requestId);
+        if (stopped) return;
+        if (!taken) {
+          collecting.current.delete(job.requestId);
+          continue;
+        }
+        rememberClaimedJob(id, job.requestId);
+        forgetPendingJob(id, job.requestId);
+        if (taken.state === "failed") {
+          setAiError("Riset latar belakang gagal: " + taken.error);
+          continue;
+        }
+        const result = taken.result;
+        if (!result) continue;
+        const answerId = crypto.randomUUID();
+        store.addMessage(id, {
+          id: answerId,
+          role: "assistant",
+          content: result.content,
+          files: result.files ? Object.keys(result.files) : undefined,
+          summary: result.summary,
+          ops: result.ops,
+          sources: result.sources,
+          research: result.research,
+          tools: result.tools,
+          notes: result.notes,
+          model: result.model,
+          mode: (job.mode as Mode) || "Ask",
+          at: Date.now(),
+        });
+        if (result.sources?.length || result.research) setSourcesOpen(answerId);
+        store.notify(
+          "Riset yang Anda tinggalkan selesai di latar belakang. Kredit ronde yang selesai tetap terpakai.",
+        );
+        if (result.files && Object.keys(result.files).length) {
+          if (useReview) {
+            setReview(result.files);
+            setReviewPath(
+              kind === "roblox" && result.files[SCENE_PATH]
+                ? SCENE_PATH
+                : Object.keys(result.files)[0],
+            );
+            setView(
+              kind === "roblox" && result.files[SCENE_PATH]
+                ? "Preview"
+                : "Code",
+            );
+          } else {
+            if (kind === "roblox") validateSceneChanges(result.files);
+            store.applyFiles(
+              id,
+              result.files,
+              "Riset latar: " + job.prompt.slice(0, 30),
+            );
+            setChanged(Object.keys(result.files));
+            if (kind === "roblox" && result.files[SCENE_PATH]) {
+              setView("Preview");
+              setRail("files");
+              setRobloxPreviewRevision((n) => n + 1);
+            }
+          }
+        }
+      }
+    };
+    void collect();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void collect();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [id, initializing, provider, kind, useReview, store.sync[id]?.phase]);
   useEffect(() => {
     if (started.current || initializing) return;
     const pendingState = useStore.getState();
@@ -820,6 +1263,7 @@ function WorkspaceContent({ project }: { project: Project }) {
           <kbd>Ctrl K</kbd>
         </button>
         <div className="ws-top-actions">
+          <NotificationBell dark={theme === "dark"} />
           <button
             className="ws-theme-toggle"
             aria-label={
@@ -841,9 +1285,9 @@ function WorkspaceContent({ project }: { project: Project }) {
           </button>
           <button
             className="ws-icon"
-            aria-label="Tampilkan atau sembunyikan panel AI"
+            aria-label="Tampilkan atau sembunyikan panel asisten"
             aria-pressed={right}
-            title="Panel AI"
+            title="Panel asisten"
             onClick={() => setRight(!right)}
           >
             <PanelRight size={16} />
@@ -856,11 +1300,11 @@ function WorkspaceContent({ project }: { project: Project }) {
             Invite
           </button>
           <button
-            className="ws-button publish-button"
-            onClick={() => setDialog("publish")}
+            className="ws-button export-button"
+            onClick={() => setDialog("export")}
           >
-            <Globe2 size={13} />
-            Publish
+            <Download size={13} />
+            Export ZIP
           </button>
         </div>
       </header>
@@ -923,7 +1367,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                 aria-label="Paket dan kredit"
                 onClick={() => setDialog("credits")}
               >
-                <Crown size={18} />
+                <CreditCard size={18} />
               </button>
             </div>
           </nav>
@@ -1237,7 +1681,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                           setRail("files");
                         }}
                       >
-                        Preview hasil AI
+                        Preview hasil
                       </button>
                       <button
                         onClick={() => {
@@ -1338,6 +1782,30 @@ function WorkspaceContent({ project }: { project: Project }) {
                 >
                   Buka App.tsx
                 </button>
+                <h3>Backend data</h3>
+                <p>
+                  <code>lib/piwu.ts</code> menghubungkan aplikasi ke tabel
+                  project lewat API data (migration 016). Isi <code>.env</code>{" "}
+                  dari <code>env.example</code>: URL PiwuApp, ID project, dan
+                  kunci dari panel Database → API data.
+                </p>
+                <pre>
+                  {
+                    "EXPO_PUBLIC_PIWU_API_URL=https://app.contoh.test\nEXPO_PUBLIC_PIWU_PROJECT_ID=<uuid project>\nEXPO_PUBLIC_PIWU_KEY=piwu_sk_<kunci baca>"
+                  }
+                </pre>
+                <p>
+                  Kunci <code>EXPO_PUBLIC_*</code> tertanam di bundle APK/IPA
+                  dan dapat dibaca siapa pun. Pakai kunci <b>baca saja</b>;
+                  operasi tulis harus lewat server Anda sendiri yang menyimpan
+                  kunci tulis. Aplikasi ini tidak punya login pengguna akhir.
+                </p>
+                <button
+                  className="ws-button"
+                  onClick={() => openFile("lib/piwu.ts")}
+                >
+                  Buka lib/piwu.ts
+                </button>
               </section>
             ) : view === "Canvas" ? (
               <Suspense
@@ -1432,6 +1900,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                   >
                     {reviewPath || activeFile ? (
                       <CodeEditor
+                        apiRef={editorApi}
                         key={(reviewPath || activeFile) + ":" + line}
                         path={reviewPath || activeFile}
                         content={
@@ -1446,6 +1915,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                         }
                         line={line}
                         readOnly={readOnly}
+                        peers={editorPeers}
                         onCursorChange={setCursor}
                         onChange={(s) => store.writeFile(id, activeFile, s)}
                       />
@@ -1530,8 +2000,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                             )
                           }
                         >
-                          <Sparkles size={13} />
-                          Perbaiki dengan AI
+                          <Wrench size={13} />
+                          Minta perbaikan
                         </button>
                         <button
                           className="ws-button"
@@ -1623,12 +2093,8 @@ function WorkspaceContent({ project }: { project: Project }) {
             />
             <aside className="ws-chat">
               <div className="chat-heading">
-                <span>
-                  <Sparkles size={16} />
-                  Asisten Piwu
-                </span>
+                <span>Asisten Piwu</span>
                 <div>
-                  <span className="ai-online" />
                   <button
                     className="ws-icon"
                     title="Sembunyikan chat"
@@ -1709,8 +2175,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                       inputRef.current?.focus();
                     }}
                   >
-                    <Sparkles size={13} />
-                    Ubah dengan AI
+                    <MessageSquare size={13} />
+                    Ubah lewat percakapan
                   </button>
                 </div>
               ) : (
@@ -1832,12 +2298,71 @@ function WorkspaceContent({ project }: { project: Project }) {
                       <>
                         {project.messages.length === 0 && (
                           <div className="chat-welcome">
-                            <span className="welcome-symbol">✳</span>
-                            <h2>Dari ide, jadi nyata.</h2>
+                            <h2>
+                              {kind === "roblox"
+                                ? "Minta asisten membangun game Anda."
+                                : kind === "mobile"
+                                  ? "Minta asisten membangun aplikasi Anda."
+                                  : "Minta asisten membangun website Anda."}
+                            </h2>
                             <p>
-                              Workspace Anda siap. Apa yang ingin kita bangun
-                              hari ini?
+                              Deskripsikan apa yang ingin dibuat atau diubah.
+                              PiwuApp menyusun rencana, menulis kode, dan
+                              mengirim hasilnya sebagai tinjauan file yang bisa
+                              Anda terima, tolak, atau kembalikan.
                             </p>
+                            <div className="welcome-suggests">
+                              {(kind === "roblox"
+                                ? [
+                                    [
+                                      "Susun struktur game",
+                                      "Peta dasar, spawn, dan alur permainan.",
+                                    ],
+                                    [
+                                      "Tambahkan rintangan",
+                                      "Checkpoint, obstacle, atau mekanisme obby.",
+                                    ],
+                                    [
+                                      "Tambahkan interaksi",
+                                      "Tombol, pintu, atau objek yang bisa dipakai.",
+                                    ],
+                                  ]
+                                : kind === "mobile"
+                                  ? [
+                                      [
+                                        "Tambahkan layar baru",
+                                        "Layar profil, pengaturan, atau halaman baru.",
+                                      ],
+                                      [
+                                        "Perbaiki navigasi",
+                                        "Rapikan alur antar-layar aplikasi.",
+                                      ],
+                                      [
+                                        "Sesuaikan tampilan",
+                                        "Warna, spasi, atau tipografi aplikasi.",
+                                      ],
+                                    ]
+                                  : [
+                                      [
+                                        "Buat halaman baru",
+                                        "Tambahkan halaman atau komponen ke website ini.",
+                                      ],
+                                      [
+                                        "Sesuaikan tampilan",
+                                        "Warna, spasi, atau tipografi halaman.",
+                                      ],
+                                      [
+                                        "Buat responsif",
+                                        "Pastikan tampilan rapi di layar kecil.",
+                                      ],
+                                    ]
+                              ).map(([title, desc]) => (
+                                <button key={title} onClick={() => send(title)}>
+                                  <b>{title}</b>
+                                  <small>{desc}</small>
+                                </button>
+                              ))}
+                            </div>
                             <div className="welcome-memory">
                               <FileText size={15} />
                               <div>
@@ -1847,8 +2372,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                               <Check size={13} />
                             </div>
                             <span className="welcome-note">
-                              Mulai dengan pesan, atau jelajahi template Anda di
-                              sebelah kiri.
+                              Mulai dengan pesan di bawah, atau jelajahi file
+                              project di sebelah kiri.
                             </span>
                           </div>
                         )}
@@ -1856,7 +2381,18 @@ function WorkspaceContent({ project }: { project: Project }) {
                           <div className={"chat-message " + m.role} key={m.id}>
                             {m.role === "assistant" ? (
                               <div className="message-author">
-                                <span>✳</span>PiwuApp <small>AI</small>
+                                <span
+                                  className="assistant-mark"
+                                  aria-hidden="true"
+                                >
+                                  P
+                                </span>
+                                PiwuApp{" "}
+                                {m.model && m.model !== "AI" && (
+                                  <small title="Model yang menjawab">
+                                    {m.model}
+                                  </small>
+                                )}
                               </div>
                             ) : (
                               <div className="message-author">
@@ -1897,7 +2433,7 @@ function WorkspaceContent({ project }: { project: Project }) {
                               <div className="ai-file-list">
                                 <span>
                                   <CheckCheck size={12} />
-                                  Tindakan AI · {m.files.length} file
+                                  Perubahan · {m.files.length} file
                                 </span>
                                 {m.files.map((f) => (
                                   <button key={f} onClick={() => openFile(f)}>
@@ -1908,6 +2444,273 @@ function WorkspaceContent({ project }: { project: Project }) {
                                 ))}
                               </div>
                             )}
+                            {m.ops && (
+                              <div className="ai-ops-list">
+                                <span
+                                  className={
+                                    m.ops.rejected.length
+                                      ? "ops-headline warn"
+                                      : "ops-headline"
+                                  }
+                                >
+                                  <ListChecks size={12} />
+                                  {m.ops.sceneChanged
+                                    ? `Scene diperbarui · ${m.ops.applied.length} operasi`
+                                    : m.ops.rejected.length
+                                      ? `Tidak ada perubahan scene · ${m.ops.rejected.length} operasi ditolak`
+                                      : "Tanpa perubahan scene"}
+                                </span>
+                                {m.ops.applied.map((op, i) => (
+                                  <div
+                                    className="ops-applied"
+                                    key={"applied" + i}
+                                  >
+                                    <p>
+                                      <Check size={11} />
+                                      <strong>{op.name || op.target}</strong>
+                                      {(op.changes || []).join(" · ")}
+                                    </p>
+                                    {op.kind === "scene.build" && (
+                                      <div className="ops-build">
+                                        <small>
+                                          Geometri dibuat server
+                                          {op.photo
+                                            ? ` dari foto ${op.photo}`
+                                            : ""}
+                                          {op.geometry
+                                            ? ` · ${op.geometry.vertices} vertex, ${op.geometry.faces} face`
+                                            : " · bagian Roblox, tanpa mesh"}
+                                          {op.asMesh
+                                            ? " · satu mesh gabungan, bisa diekspor OBJ dari editor"
+                                            : ""}
+                                        </small>
+                                        {!!op.colorGroups?.length && (
+                                          <p
+                                            className="ops-colors"
+                                            aria-label={`Warna dari piksel foto ${op.photo || 1}: ${op.colorGroups
+                                              .map(
+                                                (group) =>
+                                                  `${group.color} untuk ${group.faces} sisi`,
+                                              )
+                                              .join(", ")}`}
+                                          >
+                                            <span aria-hidden="true">
+                                              {op.colorGroups.map(
+                                                (group, at) => (
+                                                  <i
+                                                    key={
+                                                      "color" + at + group.color
+                                                    }
+                                                    style={{
+                                                      background: group.color,
+                                                    }}
+                                                  />
+                                                ),
+                                              )}
+                                            </span>
+                                            {op.colorGroups.length} warna dari
+                                            piksel foto {op.photo || 1}
+                                          </p>
+                                        )}
+                                        {(op.parts?.length || 0) > 1 && (
+                                          <ul>
+                                            {(op.parts || []).map(
+                                              (part, at) => (
+                                                <li key={"part" + at}>
+                                                  {part.name}
+                                                  <span>
+                                                    {part.kind === "mesh" &&
+                                                    part.vertices
+                                                      ? `mesh ${part.shape} · ${part.vertices} vertex`
+                                                      : `${part.shape} → ${part.kind}`}
+                                                  </span>
+                                                </li>
+                                              ),
+                                            )}
+                                          </ul>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                                {m.ops.rejected.map((op, i) => (
+                                  <p className="rejected" key={"rejected" + i}>
+                                    <X size={11} />
+                                    <strong>{op.target || op.kind}</strong>
+                                    {op.reason}
+                                  </p>
+                                ))}
+                                <small>{m.ops.note}</small>
+                              </div>
+                            )}
+                            {m.role === "assistant" &&
+                              (m.sources?.length || m.research) && (
+                                <div className="ai-sources">
+                                  <button
+                                    className="sources-headline"
+                                    aria-expanded={sourcesOpen === m.id}
+                                    onClick={() =>
+                                      setSourcesOpen(
+                                        sourcesOpen === m.id ? "" : m.id,
+                                      )
+                                    }
+                                  >
+                                    {sourcesOpen === m.id ? (
+                                      <ChevronDown size={11} />
+                                    ) : (
+                                      <ChevronRight size={11} />
+                                    )}
+                                    {m.sources?.length
+                                      ? `Sumber · ${m.sources.length}${
+                                          m.research
+                                            ? ` dari ${m.research.rounds.filter((r) => r.provider).length} pencarian`
+                                            : ""
+                                        }`
+                                      : "Sumber · tidak ada hasil"}
+                                  </button>
+                                  {sourcesOpen === m.id && (
+                                    <>
+                                      {m.research?.summary?.text && (
+                                        <div className="research-summary">
+                                          <strong>
+                                            Ringkasan lintas halaman
+                                          </strong>
+                                          <span>
+                                            Dibuat AI dari{" "}
+                                            {m.research.summary.covers.length
+                                              ? `halaman ${m.research.summary.covers
+                                                  .map((n) => `[${n}]`)
+                                                  .join(", ")}`
+                                              : "halaman yang terbaca"}
+                                            {m.research.summary.pages
+                                              ? ` (${m.research.summary.pages} halaman terbaca saat itu)`
+                                              : ""}{" "}
+                                            — bukan kutipan dan bukan kata-kata
+                                            halaman.
+                                          </span>
+                                          <p>{m.research.summary.text}</p>
+                                          {m.research.summary.gaps && (
+                                            <small>
+                                              Belum diselesaikan sumber:{" "}
+                                              {m.research.summary.gaps}
+                                            </small>
+                                          )}
+                                          {m.research.summary.notice && (
+                                            <small className="warn">
+                                              {m.research.summary.notice}
+                                            </small>
+                                          )}
+                                          <small>
+                                            Dibuat di dalam kredit ronde riset —
+                                            tidak ada kredit tambahan — dan
+                                            hanya sekali per permintaan.
+                                          </small>
+                                        </div>
+                                      )}
+                                      {m.sources?.length ? (
+                                        <ol>
+                                          {m.sources.map((s) => (
+                                            <li key={s.index}>
+                                              <a
+                                                href={s.url}
+                                                target="_blank"
+                                                rel="noreferrer noopener"
+                                              >
+                                                {s.title || s.url}
+                                                <ExternalLink size={10} />
+                                              </a>
+                                              <small>
+                                                {s.kind} · {s.provider}
+                                                {distinctQueries(m.sources) >
+                                                  1 && s.query
+                                                  ? ` · kueri “${s.query}”`
+                                                  : ""}
+                                                {m.research?.cited.includes(
+                                                  s.index,
+                                                )
+                                                  ? " · dikutip"
+                                                  : " · tidak dikutip"}
+                                              </small>
+                                              {s.snippet && (
+                                                <span>{s.snippet}</span>
+                                              )}
+                                            </li>
+                                          ))}
+                                        </ol>
+                                      ) : null}
+                                      <small>{m.research?.notice}</small>
+                                      {m.research?.rounds.some(
+                                        (r) => r.error,
+                                      ) && (
+                                        <ul className="sources-failed">
+                                          {m.research.rounds
+                                            .filter((r) => r.error)
+                                            .map((r) => (
+                                              <li key={r.query}>
+                                                Kueri “{r.query}” gagal:{" "}
+                                                {r.error}
+                                              </li>
+                                            ))}
+                                        </ul>
+                                      )}
+                                      {!!m.research?.invalid.length && (
+                                        <small className="warn">
+                                          Nomor sumber yang tidak pernah
+                                          dikembalikan:{" "}
+                                          {m.research.invalid.join(", ")} —
+                                          diabaikan, bukan dianggap sumber.
+                                        </small>
+                                      )}
+                                      {m.research?.groundingNotice && (
+                                        <small className="warn">
+                                          {m.research.groundingNotice}
+                                        </small>
+                                      )}
+                                      {!!m.research?.viaSummary?.length && (
+                                        <small>
+                                          Sitasi{" "}
+                                          {m.research.viaSummary.join(", ")}{" "}
+                                          didukung ringkasan AI, bukan kata-kata
+                                          halaman sumbernya.
+                                        </small>
+                                      )}
+                                      {!!m.research?.insufficient?.length && (
+                                        <small>
+                                          Sitasi yang belum bisa diperiksa:{" "}
+                                          {m.research.insufficient.join(", ")} —
+                                          kalimatnya terlalu pendek atau
+                                          sumbernya tidak terbaca.
+                                        </small>
+                                      )}
+                                      {m.research?.citationNotice && (
+                                        <small className="warn">
+                                          {m.research.citationNotice}
+                                        </small>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            {m.role === "assistant" &&
+                              (m.tools || m.notes?.length) && (
+                                <div className="ai-tools">
+                                  {m.tools && (
+                                    <small>
+                                      {m.tools.notice}
+                                      {m.tools.refused.length
+                                        ? ` Ditolak: ${m.tools.refused.join(", ")}.`
+                                        : ""}
+                                    </small>
+                                  )}
+                                  {!!m.notes?.length && (
+                                    <ul className="sources-failed">
+                                      {m.notes.map((note) => (
+                                        <li key={note}>{note}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )}
                             {m.role === "assistant" && (
                               <div className="message-actions">
                                 <button
@@ -1956,11 +2759,19 @@ function WorkspaceContent({ project }: { project: Project }) {
                         {busy && (
                           <div className="chat-message assistant streaming">
                             <div className="message-author">
-                              <span>✳</span>PiwuApp{" "}
+                              <span
+                                className="assistant-mark"
+                                aria-hidden="true"
+                              >
+                                P
+                              </span>
+                              PiwuApp{" "}
                               <LoaderCircle className="spin" size={11} />
                             </div>
                             <p>
-                              {streaming || "Membaca konteks project…"}
+                              {streaming ||
+                                researchStepLabel(researchStep) ||
+                                "Membaca konteks project…"}
                               <span className="stream-cursor" />
                             </p>
                           </div>
@@ -1985,14 +2796,14 @@ function WorkspaceContent({ project }: { project: Project }) {
                     <div className="quick-actions">
                       {(kind === "roblox"
                         ? [
-                            "Susun struktur game",
+                            "Buat bagian game baru",
                             "Tambahkan checkpoint obby",
                             "Susun rencana",
                           ]
                         : kind === "mobile"
                           ? [
+                              "Buat layar baru",
                               "Buat navigasi native",
-                              "Tambahkan layar profil",
                               "Susun rencana",
                             ]
                           : [
@@ -2036,16 +2847,118 @@ function WorkspaceContent({ project }: { project: Project }) {
                         </button>
                       </div>
                     ))}
-                    {attachment && (
-                      <div className="context-chip">
-                        <Paperclip size={11} />
-                        {attachment.name}
-                        <button
-                          aria-label="Hapus lampiran"
-                          onClick={() => setAttachment(null)}
-                        >
-                          <X size={11} />
-                        </button>
+                    {attachments.some((a) => a.mime.startsWith("image/")) &&
+                      kind === "roblox" &&
+                      mode === "Builder" && (
+                        <p className="context-hint">
+                          Foto akan dibaca di server: minta “buatkan model 3D
+                          dari foto ini” dan AI menyusun bentuknya dalam stud,
+                          bukan menjiplak tekstur foto. Warna tiap bagian
+                          diambil dari piksel foto Anda (rata-rata area, bukan
+                          peta tekstur UV).
+                        </p>
+                      )}
+                    {!!projectPhotos.length && (
+                      <div className="project-photos">
+                        <div className="project-photos-head">
+                          <b>
+                            Foto project <span>{projectPhotos.length}</span>
+                          </b>
+                          <small>
+                            Tersimpan di browser ini untuk project ini — belum
+                            ikut ke perangkat lain. Foto dipakai lagi tanpa
+                            diunggah ulang.
+                          </small>
+                        </div>
+                        <ul>
+                          {projectPhotos.map((photo) => (
+                            <li key={photo.id}>
+                              <button
+                                className="photo-thumb"
+                                aria-label={`Buka foto ${photo.name}`}
+                                onClick={() => void openProjectPhoto(photo)}
+                              >
+                                {photo.thumbnail ? (
+                                  <img src={photo.thumbnail} alt="" />
+                                ) : (
+                                  <span aria-hidden="true">
+                                    {photo.name.slice(0, 1).toUpperCase()}
+                                  </span>
+                                )}
+                              </button>
+                              <div>
+                                <b>{photo.name}</b>
+                                <small>
+                                  {photoSize(photo.bytes)} ·{" "}
+                                  {new Date(photo.at).toLocaleDateString(
+                                    "id-ID",
+                                  )}
+                                  {photo.palette
+                                    ? ` · ${photo.palette.colors.length} sel warna`
+                                    : " · sampel warna tidak tersedia"}
+                                </small>
+                              </div>
+                              <button
+                                className="ws-icon"
+                                aria-label={`Pakai lagi foto ${photo.name}`}
+                                title="Pakai lagi sebagai lampiran"
+                                onClick={() => void reuseProjectPhoto(photo)}
+                              >
+                                <Paperclip size={12} />
+                              </button>
+                              <button
+                                className="ws-icon"
+                                aria-label={`Hapus aset foto ${photo.name}`}
+                                title="Hapus dari aset project"
+                                onClick={() => void dropProjectPhoto(photo)}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {!!attachments.length && (
+                      <div className="context-chips">
+                        {attachments.map((file, i) => (
+                          <div
+                            className="context-chip"
+                            key={file.name + i + file.data.length}
+                          >
+                            <Paperclip size={11} />
+                            {attachments.length > 1 && (
+                              <span className="chip-photo">
+                                {file.mime.startsWith("image/")
+                                  ? `foto ${
+                                      attachments
+                                        .slice(0, i + 1)
+                                        .filter((a) =>
+                                          a.mime.startsWith("image/"),
+                                        ).length
+                                    }`
+                                  : "berkas"}
+                              </span>
+                            )}
+                            {file.name}
+                            <button
+                              aria-label={"Hapus lampiran " + file.name}
+                              onClick={() => {
+                                setAttachments((list) =>
+                                  list.filter((_, at) => at !== i),
+                                );
+                                setPalettes((list) =>
+                                  list.filter((_, at) => at !== i),
+                                );
+                                setThumbnails((list) =>
+                                  list.filter((_, at) => at !== i),
+                                );
+                              }}
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                     <div className="chat-composer">
@@ -2105,27 +3018,54 @@ function WorkspaceContent({ project }: { project: Project }) {
                             hidden
                             ref={attachmentRef}
                             type="file"
+                            multiple
                             accept="image/png,image/jpeg,image/webp,.pdf,.txt"
                             onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                try {
-                                  setAttachment(await readAttachment(file));
-                                } catch (error) {
-                                  store.notify(
-                                    error instanceof Error
-                                      ? error.message
-                                      : "Lampiran gagal dibaca.",
-                                  );
+                              const picked = [...(e.target.files || [])];
+                              e.target.value = "";
+                              if (!picked.length) return;
+                              if (attachments.length >= 3) {
+                                store.notify(
+                                  "Maksimal 3 lampiran per pesan. Hapus salah satu dulu.",
+                                );
+                                return;
+                              }
+                              try {
+                                const fresh: Attachment[] = [];
+                                const sampled: (PhotoPalette | null)[] = [];
+                                const thumbs: (string | null)[] = [];
+                                for (const file of picked.slice(
+                                  0,
+                                  3 - attachments.length,
+                                )) {
+                                  const read = await readAttachment(file);
+                                  fresh.push(read);
+                                  // Only photos can carry colours; a brief has
+                                  // no palette slot to send. One decode yields
+                                  // both the colour grid and the redraw.
+                                  const sample = read.mime.startsWith("image/")
+                                    ? await photoSamples(read)
+                                    : { palette: null, thumbnail: null };
+                                  sampled.push(sample.palette);
+                                  thumbs.push(sample.thumbnail);
                                 }
+                                setAttachments((list) => [...list, ...fresh]);
+                                setPalettes((list) => [...list, ...sampled]);
+                                setThumbnails((list) => [...list, ...thumbs]);
+                              } catch (error) {
+                                store.notify(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Lampiran gagal dibaca.",
+                                );
                               }
                               e.target.value = "";
                             }}
                           />
                           <button
                             className="ws-icon"
-                            title="Perjelas prompt"
-                            aria-label="Perjelas prompt"
+                            title="Rapikan prompt"
+                            aria-label="Rapikan prompt"
                             disabled={!input.trim()}
                             onClick={() =>
                               setInput(
@@ -2134,7 +3074,27 @@ function WorkspaceContent({ project }: { project: Project }) {
                               )
                             }
                           >
-                            <Sparkles size={13} />
+                            <PenLine size={13} />
+                          </button>
+                          <button
+                            className="ws-icon"
+                            title={
+                              research
+                                ? "Mode riset aktif: AI boleh mencari sumber lalu mengutipnya"
+                                : "Mode riset: biarkan AI mencari dan mengutip sumber"
+                            }
+                            aria-label="Mode riset"
+                            aria-pressed={research}
+                            onClick={() => {
+                              setResearch((on) => !on);
+                              store.notify(
+                                research
+                                  ? "Mode riset dimatikan."
+                                  : "Mode riset aktif. AI boleh mencari sumber; 1 kredit per ronde.",
+                              );
+                            }}
+                          >
+                            <Globe2 size={13} />
                           </button>
                           <button
                             className="ws-icon"
@@ -2155,13 +3115,13 @@ function WorkspaceContent({ project }: { project: Project }) {
                         </div>
                         <div>
                           <select
-                            aria-label="Mode AI"
+                            aria-label="Mode kerja"
                             value={mode}
                             onChange={(e) => setMode(e.target.value as Mode)}
                           >
-                            <option>Builder</option>
-                            <option>Plan</option>
-                            <option>Ask</option>
+                            <option value="Builder">Bangun</option>
+                            <option value="Plan">Rencana</option>
+                            <option value="Ask">Tanya</option>
                           </select>
                           {busy ? (
                             <button
@@ -2188,20 +3148,36 @@ function WorkspaceContent({ project }: { project: Project }) {
                         </div>
                       </div>
                     </div>
+                    {bgResearch && (
+                      <p className="bg-research" role="status">
+                        <LoaderCircle className="spin" size={11} /> Riset latar
+                        belakang masih berjalan di server. Hasilnya muncul di
+                        chat begitu selesai, walau tab ini sempat ditutup — asal
+                        proses server tidak dimulai ulang di tengah ronde.
+                      </p>
+                    )}
                     <div className="composer-footer">
-                      <select
-                        aria-label="Pilih model"
+                      <AiModelPicker
                         value={model}
-                        onChange={(e) => setModel(e.target.value as Model)}
-                      >
-                        {["Otomatis", "Cepat", "Seimbang", "Kuat"].map((m) => (
-                          <option key={m}>{m}</option>
-                        ))}
-                      </select>
+                        onChange={setModel}
+                        catalog={catalog}
+                        status={catalogStatus}
+                        error={catalogError}
+                        onRefresh={() => void loadModels(true)}
+                        disabled={provider !== "configured"}
+                      />
                       <span>
                         {provider !== "configured"
                           ? "AI belum tersedia"
-                          : `Estimasi ${mode === "Ask" ? 1 : mode === "Plan" ? 2 : model === "Kuat" ? 8 : model === "Cepat" ? 1 : 3} kredit · belum ditagih`}
+                          : `Estimasi ${estimateCredits({
+                              mode,
+                              model,
+                              tiers: catalog?.tiers,
+                              catalog,
+                              prompt: input,
+                              hasAttachments:
+                                attachments.length > 0 || references.length > 0,
+                            })} kredit · belum ditagih`}
                       </span>
                     </div>
                   </div>
@@ -2239,7 +3215,35 @@ function WorkspaceContent({ project }: { project: Project }) {
               </span>
             </span>
           )}
-          <Presence projectId={id} file={activeFile} />
+          <Presence
+            peers={presence.peers}
+            state={presence.state}
+            activeFile={activeFile}
+          />
+          {collab.status === "live" && collabPeers > 0 && (
+            <span
+              className="presence-status live"
+              title="Karakter digabung dengan CRDT untuk file yang sama. Perubahan tetap disimpan lewat revisi dan deteksi konflik."
+            >
+              CRDT · {collab.writers} tab
+            </span>
+          )}
+          {collab.status === "conflict" && (
+            <span
+              className="presence-status conflict"
+              title="Rekan memulai dari teks yang berbeda, jadi penggabungan otomatis dimatikan agar file tidak rusak. Simpan, lalu buka ulang filenya."
+            >
+              CRDT nonaktif · teks berbeda
+            </span>
+          )}
+          {collab.status === "limit" && (
+            <span
+              className="presence-status degraded"
+              title="CRDT hanya berjalan untuk file sampai 30.000 karakter atau 60.000 simpul. File ini tetap bisa diedit dan disimpan seperti biasa."
+            >
+              CRDT nonaktif · batas file
+            </span>
+          )}
           <button onClick={() => setDialog("services")}>Layanan</button>
           {recording && (
             <span className="recording-indicator">
@@ -2282,8 +3286,8 @@ function WorkspaceContent({ project }: { project: Project }) {
             Terminal
           </button>
           <button onClick={() => setRight(!right)}>
-            <Sparkles size={11} />
-            AI
+            <MessageSquare size={11} />
+            Asisten
           </button>
           <button
             onClick={() => (focus ? setFocus(false) : setDialog("commands"))}
@@ -2292,14 +3296,105 @@ function WorkspaceContent({ project }: { project: Project }) {
           </button>
         </div>
       </footer>
+      {photoView && (
+        <Modal
+          title={`Foto project · ${photoView.name}`}
+          onClose={() => {
+            setPhotoView(null);
+            setPhotoViewSrc(null);
+          }}
+          wide
+        >
+          <div className="photo-view">
+            <p className="photo-view-note">
+              <ShieldCheck size={13} />
+              Foto ini disimpan di browser ini untuk project ini, bukan di
+              cloud. Warnanya dibaca dari piksel foto (rata-rata per area) —
+              bukan peta tekstur UV.
+            </p>
+            {photoViewSrc && (
+              <img src={photoViewSrc} alt={`Foto project ${photoView.name}`} />
+            )}
+            <dl>
+              <div>
+                <dt>Ukuran</dt>
+                <dd>{photoSize(photoView.bytes)}</dd>
+              </div>
+              <div>
+                <dt>Jenis</dt>
+                <dd>{photoView.mime}</dd>
+              </div>
+              <div>
+                <dt>Ditambahkan</dt>
+                <dd>
+                  {new Date(photoView.at).toLocaleString("id-ID", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </dd>
+              </div>
+              <div>
+                <dt>Datang dengan</dt>
+                <dd>
+                  {photoView.from
+                    ? "balasan AI di chat project ini"
+                    : "lampiran chat"}
+                </dd>
+              </div>
+            </dl>
+            {photoView.palette ? (
+              <div className="photo-view-colors">
+                <b>Warna yang dibaca dari foto ini</b>
+                <span
+                  aria-label={`${photoView.palette.colors.length} sel warna dari foto ${photoView.name}`}
+                >
+                  {photoView.palette.colors.map((color, at) => (
+                    <i key={"cell" + at} style={{ background: color }} />
+                  ))}
+                </span>
+                <small>
+                  {photoView.palette.columns}×{photoView.palette.rows} sel (
+                  {photoView.palette.colors.length} warna) — inilah yang dipakai
+                  server untuk mewarnai model, bukan gambar aslinya.
+                </small>
+              </div>
+            ) : (
+              <p className="photo-view-note warn">
+                <AlertTriangle size={13} />
+                Sampel warna foto ini tidak tersedia, jadi model tidak memakai
+                warna dari foto. Lampirkan ulang fotonya untuk mencoba lagi.
+              </p>
+            )}
+            <div className="photo-view-actions">
+              <button
+                className="button button-dark"
+                onClick={() => {
+                  void reuseProjectPhoto(photoView);
+                  setPhotoView(null);
+                }}
+              >
+                <Paperclip size={13} />
+                Pakai lagi sebagai lampiran
+              </button>
+              <button
+                className="button button-outline"
+                onClick={() => void dropProjectPhoto(photoView)}
+              >
+                <Trash2 size={13} />
+                Hapus dari aset project
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {dialog && (
         <Modal
           title={
             {
               rename: "Ganti nama project",
+              ...DIALOG_TITLES,
               delete: "Hapus project?",
               invite: "Bangun bersama tim",
-              publish: "Bawa ide Anda ke dunia",
               integrations: "Integrasi",
               github: "Hubungkan repositori",
               packages: "Paket project",
@@ -2323,6 +3418,7 @@ function WorkspaceContent({ project }: { project: Project }) {
               <Suspense fallback={<p>Memuat layanan…</p>}>
                 <ServiceHub
                   projectId={id}
+                  initialTab={searchParams.get("services") || undefined}
                   onReference={(url, title) => {
                     setReferences([url]);
                     setInput(
@@ -2399,16 +3495,15 @@ function WorkspaceContent({ project }: { project: Project }) {
                 <ServicePanel kind="invite" projectId={id} />
               </Suspense>
             )}
-            {dialog === "publish" && kind !== "webapp" && (
-              <p>
-                {kind === "roblox"
-                  ? "Publikasi game dan Play Test dilakukan melalui Roblox Studio. Hubungkan melalui tab 3D Builder → Hubungkan Studio."
-                  : "Build, signing, dan distribusi Android/iOS dilakukan dengan Expo/EAS atau toolchain native. Gunakan ekspor ZIP untuk melanjutkan."}
-              </p>
-            )}
-            {dialog === "publish" && kind === "webapp" && (
-              <Suspense fallback={<p>Memuat…</p>}>
-                <ServicePanel kind="publish" projectId={id} />
+            {dialog === "export" && (
+              <>
+                <p>
+                  {kind === "roblox"
+                    ? "PiwuApp tidak memublikasikan game. Buka project di Roblox Studio lewat tab 3D Builder → Hubungkan Studio, lalu publikasikan dari sana. Ekspor ZIP tetap tersedia untuk menyimpan kode skrip dan aset map."
+                    : kind === "mobile"
+                      ? "Build, signing, dan distribusi Android/iOS dilakukan dengan Expo/EAS atau toolchain native di mesin Anda. PiwuApp tidak menghosting hasil build."
+                      : "PiwuApp tidak menghosting website atau memasang domain. Unduh seluruh kode project sebagai ZIP, lalu jalankan di mesin Anda sendiri."}
+                </p>
                 <button
                   className="button button-outline full-width mt-3"
                   onClick={() => void exportZip()}
@@ -2416,47 +3511,16 @@ function WorkspaceContent({ project }: { project: Project }) {
                   <Download size={14} />
                   Unduh kode ZIP
                 </button>
-              </Suspense>
+              </>
             )}
             {dialog === "github" && (
-              <>
-                <p>
-                  Koneksi layanan hanya boleh dilakukan dari backend. Tidak ada
-                  kredensial yang disimpan dalam project atau localStorage.
-                </p>
-                {(dialog === "github"
-                  ? ["GitHub"]
-                  : [
-                      "Supabase",
-                      "GitHub",
-                      "Figma",
-                      "Stripe",
-                      "Midtrans / Xendit",
-                    ]
-                ).map((n) => (
-                  <div className="integration-row" key={n}>
-                    <span>
-                      <Plug size={16} />
-                      {n}
-                    </span>
-                    <small>Belum terhubung</small>
-                  </div>
-                ))}
-                <p className="integration-note">
-                  Siapkan kredensial di environment server. OAuth konektor,
-                  sinkronisasi repositori, dan webhook pembayaran memerlukan
-                  implementasi layanan produksi.
-                </p>
-                {dialog === "github" && (
-                  <button
-                    className="button button-dark full-width"
-                    onClick={() => void exportZip()}
-                  >
-                    <Download size={14} />
-                    Export kode untuk repositori Anda
-                  </button>
-                )}
-              </>
+              <Suspense fallback={<p>Memuat…</p>}>
+                <GitHubPanel
+                  files={project.files}
+                  projectName={project.name}
+                  onExport={() => void exportZip()}
+                />
+              </Suspense>
             )}
             {dialog === "packages" && (
               <Suspense fallback={<p>Memuat…</p>}>
@@ -2732,8 +3796,8 @@ function WorkspaceContent({ project }: { project: Project }) {
                             void send(c.body);
                           }}
                         >
-                          <Sparkles size={12} />
-                          Task untuk AI
+                          <ArrowUpRight size={12} />
+                          Kirim sebagai tugas
                         </button>
                       </div>
                     </div>
@@ -2783,7 +3847,4 @@ function WorkspaceContent({ project }: { project: Project }) {
       )}
     </div>
   );
-}
-function UsersIcon() {
-  return <span style={{ fontSize: 23 }}>↗</span>;
 }

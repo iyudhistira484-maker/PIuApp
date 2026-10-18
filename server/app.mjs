@@ -14,27 +14,34 @@ import { registerCollaboration } from "./routes/collaboration.mjs";
 import { registerAssets } from "./routes/assets.mjs";
 import { registerBilling } from "./routes/billing.mjs";
 import { registerSandbox } from "./routes/sandbox.mjs";
-import { registerPublish, startPublishWorker } from "./routes/publish.mjs";
-import { registerAnalytics } from "./routes/analytics.mjs";
 import { registerMarketplace } from "./routes/marketplace.mjs";
 import { registerRecordings } from "./routes/recordings.mjs";
+import { registerNotifications } from "./routes/notifications.mjs";
+import { registerPayouts } from "./routes/payouts.mjs";
+import { registerDisputes } from "./routes/disputes.mjs";
+import { registerAppData } from "./routes/app-data.mjs";
 import { SandboxProvider } from "./providers/sandbox.mjs";
-import { NetlifyHosting } from "./providers/hosting.mjs";
 import { fetchReference } from "./lib/references.mjs";
+import { createResearchJobs } from "./lib/research-jobs.mjs";
 export function createApp({
   env = process.env,
   fetcher = fetch,
   context,
   sandbox,
-  hosting,
-  worker = false,
+  resolver,
 } = {}) {
   const app = express(),
     ctx = context || createContext(env, fetcher);
+  // Tests inject a resolver so the SSRF guard can be exercised offline.
+  if (resolver) ctx.resolver = resolver;
+  // Research keeps running when the tab closes; finished answers wait here for
+  // the same account and project. In-process and bounded by design.
+  // Finished research answers are mirrored to the shared table (009) so they
+  // survive a restart; without it the store stays in-process and says so.
+  ctx.researchJobs ||= createResearchJobs({ admin: ctx.admin, env });
   const coordination = createCoordination(ctx);
   app.locals.coordination = coordination;
   sandbox ||= new SandboxProvider(env, coordination);
-  hosting ||= new NetlifyHosting(env, fetcher);
   app.disable("x-powered-by");
   if (env.TRUST_PROXY_CIDRS)
     app.set(
@@ -104,9 +111,11 @@ export function createApp({
           );
           if (r.ok) {
             const d = await r.json();
+            const list = Array.isArray(d.data) ? d.data : [];
+            // LLM_MODEL is optional; without it any listed model is usable.
             result.ai =
-              Array.isArray(d.data) &&
-              d.data.some((m) => m.id === env.LLM_MODEL)
+              list.length &&
+              (!env.LLM_MODEL || list.some((m) => m.id === env.LLM_MODEL))
                 ? "model_available"
                 : "endpoint_reachable";
           } else result.ai = "inconclusive";
@@ -118,6 +127,9 @@ export function createApp({
     }),
   );
   app.use("/api", platformGate(ctx));
+  registerAppData(app, ctx);
+  registerPayouts(app, ctx);
+  registerDisputes(app, ctx);
   registerAdmin(app, ctx);
   registerData(app, ctx);
   registerStudio(app, ctx);
@@ -126,10 +138,9 @@ export function createApp({
   registerAssets(app, ctx);
   registerBilling(app, ctx);
   registerSandbox(app, ctx, sandbox);
-  registerPublish(app, ctx, hosting);
-  registerAnalytics(app, ctx);
   registerMarketplace(app, ctx);
   registerRecordings(app, ctx);
+  registerNotifications(app, ctx);
   app.post(
     "/api/projects/:id/reference",
     ctx.auth,
@@ -168,20 +179,19 @@ export function createApp({
       code: error instanceof HttpError ? error.code : "SERVICE_ERROR",
     });
   });
-  const stopWorker = worker
-    ? startPublishWorker(ctx, sandbox, hosting)
-    : () => {};
-  const recovery =
-    worker && ctx.admin
-      ? setInterval(() => {
-          void Promise.resolve(ctx.admin.rpc("piwu_recover_credits")).catch(
-            () => {},
-          );
-        }, 60000)
-      : null;
+  // PiwuApp is a builder: it has no deploy worker. The 60-second sweep still
+  // expires credit lots (migration 010) and releases reservations left behind
+  // by a crashed request, so it runs whenever the service client exists. The
+  // legacy publish/analytics branches inside the SQL function stay inert.
+  const recovery = ctx.admin
+    ? setInterval(() => {
+        void Promise.resolve(ctx.admin.rpc("piwu_recover_credits")).catch(
+          () => {},
+        );
+      }, 60000)
+    : null;
   recovery?.unref();
   const stop = () => {
-    stopWorker();
     if (recovery) clearInterval(recovery);
   };
   return { app, stop };

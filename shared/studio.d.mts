@@ -31,6 +31,20 @@ export interface StudioBundle {
     { op: "create" | "update"; node: StudioNode } | { op: "delete"; id: string }
   )[];
 }
+export const STUDIO_PLUGIN: {
+  version: string;
+  file: string;
+  bundle: string;
+  name: string;
+  limits: {
+    nodes: number;
+    scripts: number;
+    sourceBytes: number;
+    snapshotBytes: number;
+    changes: number;
+    sceneObjects: number;
+  };
+};
 export const editableClasses: string[];
 export const snapshotSchema: z.ZodType<StudioSnapshot>;
 export const studioNodeSchema: z.ZodType<StudioNode>;

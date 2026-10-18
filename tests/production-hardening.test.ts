@@ -116,7 +116,7 @@ test("pending sandbox creations count toward quota and failed creation frees adm
   assert.equal(provider.sessions.size, 1);
 });
 
-test("migrations 001–008: real SQL directory/RLS and two HTTP replicas sharing admission state", async (t) => {
+test("migrations 001–010: real SQL directory/RLS and two HTTP replicas sharing admission state", async (t) => {
   const db = new PGlite();
   const servers: any[] = [];
   try {

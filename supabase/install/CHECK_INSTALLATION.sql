@@ -13,7 +13,17 @@ with markers(migration,table_name,function_signature) as (values
  ('006','public.studio_bridges',null),
  ('007','public.runtime_rate_buckets','public.piwu_take_rate(text,integer,integer)'),
  ('007','public.runtime_sandbox_slots','public.piwu_sandbox_slot(uuid,uuid,uuid,boolean)'),
- ('008',null,'public.piwu_admin_users(uuid,text,integer)')
+ ('008',null,'public.piwu_admin_users(uuid,text,integer)'),
+ ('009','public.runtime_search_cache',null),
+ ('010','public.credit_lots','public.piwu_claim_daily(uuid)'),
+ ('010',null,'public.piwu_credit_status(uuid)'),
+ ('011',null,'public.piwu_admin_delete_account(uuid,uuid,uuid,jsonb,text)'),
+ ('012','public.notifications','public.piwu_notifications(uuid,integer)'),
+ ('013','public.marketplace_payouts','public.piwu_request_payout(uuid,integer,text,text)'),
+ ('013',null,'public.piwu_purge_seller_pii(uuid)'),
+ ('014','public.marketplace_disputes','public.piwu_dispute_open(uuid,uuid,text,text)'),
+ ('015',null,'public.piwu_dispute_outcomes()'),
+ ('016','public.project_api_keys','public.piwu_app_request(text,uuid,text,jsonb)')
 )
 select migration,
   case when bool_and((table_name is null or to_regclass(table_name) is not null)
@@ -68,7 +78,11 @@ with required(name) as (values
  ('public.platform_audit'),
  ('public.studio_bridges'),
  ('public.runtime_rate_buckets'),
- ('public.runtime_sandbox_slots')
+ ('public.runtime_sandbox_slots'),
+ ('public.seller_verifications'),
+ ('public.marketplace_payouts'),
+ ('public.marketplace_disputes'),
+ ('public.project_api_keys')
 )
 select r.name as object,
   case when c.oid is null then 'TABEL_BELUM_ADA'
@@ -86,13 +100,26 @@ with required(signature,browser_allowed) as (values
  ('public.piwu_save_dataset(uuid,uuid,text,jsonb,jsonb,bigint)',true),
  ('public.piwu_delete_dataset(uuid,uuid,bigint)',true),
  ('public.piwu_admin_action(uuid,uuid,text,uuid,jsonb,text)',false),
+ ('public.piwu_admin_delete_account(uuid,uuid,uuid,jsonb,text)',false),
+ ('public.piwu_notifications(uuid,integer)',false),
+ ('public.piwu_notification_read(uuid,uuid)',false),
+ ('public.piwu_notification_read_all(uuid)',false),
  ('public.piwu_admin_users(uuid,text,integer)',false),
  ('public.piwu_take_rate(text,integer,integer)',false),
  ('public.piwu_sandbox_slot(uuid,uuid,uuid,boolean)',false),
  ('public.piwu_reserve_credits(uuid,uuid,integer,text)',false),
  ('public.piwu_finish_credits(uuid,boolean)',false),
  ('public.piwu_apply_payment(uuid,integer,text,text)',false),
- ('public.piwu_claim_publish()',false)
+ ('public.piwu_claim_publish()',false),
+ ('public.piwu_dispute_open(uuid,uuid,text,text)',false),
+ ('public.piwu_dispute_reply(uuid,uuid,text)',false),
+ ('public.piwu_dispute_withdraw(uuid,uuid)',false),
+ ('public.piwu_dispute_review(uuid,uuid,uuid,text,text)',false),
+ ('public.piwu_seller_balance(uuid)',false),
+ ('public.piwu_app_key_create(uuid,uuid,uuid,text,text,text)',false),
+ ('public.piwu_app_key_list(uuid,uuid)',false),
+ ('public.piwu_app_key_revoke(uuid,uuid,uuid)',false),
+ ('public.piwu_app_request(text,uuid,text,jsonb)',false)
 ), checks as (
  select *,to_regprocedure(signature) as fn from required
 )

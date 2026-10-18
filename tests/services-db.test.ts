@@ -8,7 +8,12 @@ test("Service migration: atomic credits, payment replay/refund, invite and role 
     await db.exec(
       `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;create function storage.foldername(n text) returns text[] language sql immutable as $$select string_to_array(n,'/')$$;grant usage on schema public,auth,storage to authenticated,anon,service_role;grant execute on function auth.uid() to authenticated,anon;alter default privileges in schema public grant select,insert,update,delete on tables to authenticated;`,
     );
-    for (const name of ["001_schema", "002_workspace_sync", "003_services"])
+    for (const name of [
+      "001_schema",
+      "002_workspace_sync",
+      "003_services",
+      "010_credit_lots",
+    ])
       await db.exec(
         readFileSync("supabase/" + name + ".sql", "utf8").replace(
           "create extension if not exists pgcrypto;",
@@ -23,11 +28,13 @@ test("Service migration: atomic credits, payment replay/refund, invite and role 
     await db.query("insert into auth.users values($1),($2)", [a, b]);
     const scalar = async (sql: string, args: any[] = []) =>
       Object.values((await db.query<any>(sql, args)).rows[0])[0];
-    assert.equal(await scalar("select piwu_ensure_credits($1)", [a]), 30);
-    assert.equal(await scalar("select piwu_ensure_credits($1)", [a]), 30);
+    // Migration 010: a Free account gets its 20-credit daily allowance once,
+    // and calling again on the same UTC day must not add a second helping.
+    assert.equal(await scalar("select piwu_ensure_credits($1)", [a]), 20);
+    assert.equal(await scalar("select piwu_ensure_credits($1)", [a]), 20);
     assert.equal(
       await scalar("select piwu_reserve_credits($1,$2,5,'ai')", [a, r]),
-      25,
+      15,
     );
     await assert.rejects(
       db.query("select piwu_reserve_credits($1,$2,5,'ai')", [a, r]),
@@ -37,14 +44,36 @@ test("Service migration: atomic credits, payment replay/refund, invite and role 
     await db.query("select piwu_finish_credits($1,false)", [r]);
     assert.equal(
       await scalar("select balance from credit_accounts where user_id=$1", [a]),
-      30,
+      20,
     );
+    assert.equal(
+      await scalar(
+        "select coalesce(sum(remaining),0) from credit_lots where user_id=$1",
+        [a],
+      ),
+      20,
+      "lot harus menjumlah sebesar saldo",
+    );
+    // `GET /api/account` asks this after the claim above: the page prints the
+    // allowance the database actually granted, the day's remainder (5 credits
+    // spent and given back above), and the instant of the next reset.
+    const status = (
+      await db.query<any>("select piwu_credit_status($1) as s", [a])
+    ).rows[0].s;
+    assert.equal(status.applied, true);
+    assert.equal(status.plan, "Free");
+    assert.equal(status.daily, 20);
+    assert.equal(status.dailyRemaining, 20);
+    assert.equal(status.monthlyCap, 600);
+    assert.equal(status.resetUtcHour, 0);
+    assert.equal(new Date(status.resetAt).getUTCHours(), 0);
+    assert.ok(new Date(status.resetAt).getTime() > Date.now());
     await db.query(
       "insert into referrals(referrer_id,referred_id) values($1,$2)",
       [b, a],
     );
     await db.query(
-      "insert into payment_orders(id,user_id,provider,kind,sku,amount,credits) values($1,$2,'midtrans','topup','credits100',49000,100)",
+      "insert into payment_orders(id,user_id,provider,kind,sku,amount,credits) values($1,$2,'midtrans','topup','credits300',49000,300)",
       [order, a],
     );
     await assert.rejects(
@@ -61,11 +90,11 @@ test("Service migration: atomic credits, payment replay/refund, invite and role 
     );
     assert.equal(
       await scalar("select balance from credit_accounts where user_id=$1", [a]),
-      180,
+      370,
     );
     assert.equal(
       await scalar("select balance from credit_accounts where user_id=$1", [b]),
-      80,
+      70,
     );
     await db.query("select piwu_apply_payment($1,49000,'IDR','refunded')", [
       order,
@@ -75,11 +104,11 @@ test("Service migration: atomic credits, payment replay/refund, invite and role 
     ]);
     assert.equal(
       await scalar("select balance from credit_accounts where user_id=$1", [a]),
-      30,
+      20,
     );
     assert.equal(
       await scalar("select balance from credit_accounts where user_id=$1", [b]),
-      30,
+      20,
     );
     assert.equal(
       await scalar("select piwu_apply_payment($1,49000,'IDR','paid')", [order]),
@@ -109,7 +138,7 @@ test("Service migration: atomic credits, payment replay/refund, invite and role 
       second = crypto.randomUUID();
     for (const orderId of [first, second]) {
       await db.query(
-        "insert into payment_orders(id,user_id,provider,kind,sku,amount,credits,plan) values($1,$2,'midtrans','plan','pro',199000,600,'Pro')",
+        "insert into payment_orders(id,user_id,provider,kind,sku,amount,credits,plan) values($1,$2,'midtrans','plan','pro',199000,1500,'Pro')",
         [orderId, a],
       );
       await db.query("select piwu_apply_payment($1,199000,'IDR','paid')", [

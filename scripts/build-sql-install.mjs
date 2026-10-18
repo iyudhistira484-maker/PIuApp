@@ -6,7 +6,7 @@ const names = readdirSync(root)
   .filter((n) => /^\d{3}_.+\.sql$/.test(n))
   .sort();
 if (
-  names.length !== 8 ||
+  names.length !== 16 ||
   names.some((n, i) => !n.startsWith(String(i + 1).padStart(3, "0") + "_"))
 )
   throw new Error("Tinjau urutan migration sebelum memperbarui installer.");
@@ -24,7 +24,7 @@ const tables = [
   ),
 ];
 const content =
-  `-- PIWUAPP: INSTALL BARU SAJA (001–008)
+  `-- PIWUAPP: INSTALL BARU SAJA (001–016)
 -- Dibuat oleh npm run sql:bundle dari migration kanonis; jangan edit hasil ini manual.
 -- Jalankan SELURUH file di SQL Editor project Supabase baru sebagai operator database.
 -- BUKAN untuk database yang pernah menerima migration PiwuApp.
@@ -61,14 +61,14 @@ end $piwu_preflight$;
       );
     })
     .join("\n") +
-  "\nnotify pgrst, 'reload schema';\ncommit;\n\nselect 'Instalasi skema 001–008 selesai. Jalankan CHECK_INSTALLATION.sql, lalu bootstrap admin secara terpisah.' as hasil;\n";
+  "\nnotify pgrst, 'reload schema';\ncommit;\n\nselect 'Instalasi skema 001–016 selesai. Jalankan CHECK_INSTALLATION.sql, lalu bootstrap admin secara terpisah.' as hasil;\n";
 const target = new URL("install/INSTALL_NEW_DATABASE.sql", root);
 if (process.argv.includes("--check")) {
   if (readFileSync(target, "utf8") !== content)
     throw new Error(
       "Installer berbeda dari migration. Jalankan npm run sql:bundle.",
     );
-  console.log("SQL bundle sesuai migration 001–008.");
+  console.log("SQL bundle sesuai migration 001–016.");
 } else {
   mkdirSync(new URL("install/", root), { recursive: true });
   writeFileSync(target, content);

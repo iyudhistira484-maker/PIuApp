@@ -47,14 +47,12 @@ export function registerRecordings(app, ctx) {
       );
       const raw = token();
       check(
-        await ctx.admin
-          .from("recording_shares")
-          .insert({
-            recording_id: saved.id,
-            created_by: req.user.id,
-            token_hash: hash(raw),
-            expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
-          }),
+        await ctx.admin.from("recording_shares").insert({
+          recording_id: saved.id,
+          created_by: req.user.id,
+          token_hash: hash(raw),
+          expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+        }),
       );
       res.json({
         recording: saved,

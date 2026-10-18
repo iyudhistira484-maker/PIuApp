@@ -1,7 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { createApp } from "./app.mjs";
-const { app, stop } = createApp({ worker: true });
+const { app, stop } = createApp({});
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.resolve("dist"), { index: false }));
   app.get("/{*path}", (_, res) =>

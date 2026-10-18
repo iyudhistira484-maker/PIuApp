@@ -1,4 +1,4 @@
--- JALANKAN TERPISAH, setelah instalasi 001–008 dan setelah akun email terverifikasi dibuat.
+-- JALANKAN TERPISAH, setelah instalasi 001–010 dan setelah akun email terverifikasi dibuat.
 -- SQL Editor Supabase, sebagai operator database tepercaya. Bukan lewat browser aplikasi.
 -- Ganti SATU placeholder email di bawah secara lokal. Jangan commit email/kredensial pribadi.
 -- Tidak membuat akun, tidak mengubah password, dan tidak melewati verifikasi email.
@@ -15,7 +15,7 @@ begin
     raise exception 'PIWU_EMAIL_REQUIRED: ganti placeholder dengan email akun Anda yang sudah terverifikasi';
   end if;
   if to_regclass('public.platform_admins') is null or to_regprocedure('public.piwu_admin_users(uuid,text,integer)') is null then
-    raise exception 'PIWU_SETUP_REQUIRED: selesaikan migration 001–008 terlebih dahulu';
+    raise exception 'PIWU_SETUP_REQUIRED: selesaikan migration 001–010 terlebih dahulu';
   end if;
   if exists(select 1 from public.platform_admins where role='superadmin') then
     raise exception 'PIWU_ADMIN_EXISTS: superadmin sudah ada. Kelola peran melalui panel admin; jangan ulang bootstrap';

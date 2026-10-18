@@ -8,7 +8,7 @@ Panel Database sekarang membedakan **demo lokal** dan **dataset cloud** secara e
 2. Konfigurasi Supabase frontend dan service API seperti SERVICES_SETUP.md. Masuk dengan akun terverifikasi dan sinkronkan project terlebih dahulu.
 3. Buka workspace → Database. Buat tabel, tambahkan kolom/baris, lalu pilih **Simpan ke cloud**.
 
-Data disimpan sebagai JSONB terstruktur di `project_datasets`, bukan membuat tabel PostgreSQL/DDL dari input pengguna. Dataset hanya untuk anggota workspace; ini **bukan backend publik atau autentikasi pengguna aplikasi hasil publish**.
+Data disimpan sebagai JSONB terstruktur di `project_datasets`, bukan membuat tabel PostgreSQL/DDL dari input pengguna. Dataset hanya untuk anggota workspace. Sejak migration 016, **aplikasi hasil build** dapat memakai tabel yang sama lewat kunci API per project (lihat bagian di bawah), bukan dengan membuka akses anon ke `project_datasets`.
 
 ## Fitur dan batas
 
@@ -34,3 +34,36 @@ RLS melindungi SELECT. Direct INSERT/UPDATE/DELETE dicabut dari authenticated/an
 - Browser test menggunakan repository fixture untuk UI save, Viewer, konflik/save-as-new, kegagalan jaringan, dan pemisahan draft akun. Ini bukan bukti koneksi Supabase live.
 
 Penggunaan nyata masih memerlukan acceptance staging pada Supabase, backup database, kebijakan retensi/penghapusan, dan pembatasan kapasitas per akun. Jangan menyimpan credential atau data sensitif di demo/cache browser.
+
+## API data untuk aplikasi hasil build (migration 016)
+
+Aplikasi web/mobile yang dibuat di PiwuApp dapat membaca dan menulis tabel project tanpa sesi Supabase pengguna akhir. Kuncinya dibuat Owner/Editor di panel Database → **API data untuk aplikasi Anda**, maksimal **lima kunci aktif per project**, masing-masing **baca saja** atau **baca & tulis**.
+
+- **Plaintext sekali.** Server membuat `piwu_sk_` + 24 byte acak base64url, menyimpan **SHA-256**-nya di `project_api_keys.key_hash`, dan menampilkan nilai aslinya hanya pada respons 201. Daftar kunci tidak pernah memuat hash. Kunci yang hilang tidak bisa dipulihkan; buat kunci baru lalu cabut yang lama.
+- **Cakupan sempit.** Kunci hanya memetakan ke satu project dan tabel dataset di dalamnya. Tidak ada akses ke file kode, storage, akun, marketplace, atau RPC lain. Hanya superadmin/service role yang dapat memanggil RPC; RLS aktif tanpa policy browser.
+- **Cabut langsung.** `revoked_at` diperiksa setiap permintaan. Permintaan dengan kunci yang dicabut ditolak `APP_KEY_INVALID` (401). `last_used_at` diperbarui paling sering sekali per 30 detik agar tidak menulis di setiap GET.
+- **Operasi.** `tables` (daftar + jumlah baris), `list` (satu tabel), `insert` (1–50 baris per permintaan), `update`, dan `delete`. Validasi memakai aturan dataset yang sama: 20 tabel/project, 32 kolom, 1.000 baris, 2 MB, 4.000 karakter, tipe `text`/`number`/`boolean` (teks, angka, ya/tidak). Payload yang salah ditolak seluruhnya, tidak ada penyimpanan sebagian.
+- **Revisi tetap dinaikkan.** Setiap tulis menaikkan `revision` dan mengembalikan tabel terbaru, sehingga panel Database pengguna melihat konflik seperti biasa. Insert dengan ID yang sudah ada ditolak; ID baru dibuat server.
+- **HTTP.** `GET /api/public/app/:projectId` (daftar tabel), `GET/POST /api/public/app/:projectId/:tableId`, `PATCH/DELETE /api/public/app/:projectId/:tableId/:rowId`; kunci lewat header `x-piwu-key` atau `Authorization: Bearer`. CORS `*` dan preflight dibuka **hanya** untuk prefix itu. Rate limit per IP: 120 baca/menit dan 60 tulis/menit; insert dibatasi 50 baris.
+- **Kunci tulis di klien bukan rahasia.** Siapa pun yang membuka DevTools dapat membacanya. Pakai kunci baca saja di aplikasi web dan simpan kunci tulis di server milik pengguna. Di Roblox, `HttpService` hanya berjalan di Script server dan memerlukan HTTP aktif; kunci yang tertanam di place tetap dapat dibaca dari file place.
+- **Belum ada.** Autentikasi pengguna akhir, izin per baris/kolom, kuota per kunci, webhook, realtime, dan audit per permintaan. Kunci tidak menggantikan RLS untuk anggota workspace; ia adalah jalur terpisah yang hanya menyentuh dataset project.
+
+Contoh permintaan:
+
+```sh
+curl -H "x-piwu-key: piwu_sk_..." \
+  "https://app.example/api/public/app/<projectId>/<tableId>"
+```
+
+```lua
+local HttpService = game:GetService("HttpService")
+local res = HttpService:RequestAsync({
+  Url = "https://app.example/api/public/app/<projectId>/<tableId>",
+  Method = "GET",
+  Headers = { ["x-piwu-key"] = "<kunci>" },
+})
+local data = HttpService:JSONDecode(res.Body).table
+print(data.name, #data.rows)
+```
+
+Bukti: `tests/app-data.test.ts` (PGlite 001–016: peran, hash, cakupan, isolasi project, pencabutan, batas lima kunci) dan `tests/app-data-api.test.ts` (HTTP: pembuatan kunci, kunci hanya tampil sekali, CORS/preflight, pemetaan galat, kunci baca tidak bisa menulis, kunci dicabut langsung gagal).

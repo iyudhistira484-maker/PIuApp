@@ -137,7 +137,7 @@
   --svc-line: var(--ide-border);
 }
 .workspace
-  :is(.publish-button, .chat-send, .send-button, .accept-all, .rb-primary) {
+  :is(.export-button, .chat-send, .send-button, .accept-all, .rb-primary) {
   color: #fff !important;
   background: var(--ide-primary) !important;
   border-color: var(--ide-primary) !important;

@@ -1,0 +1,234 @@
+/* The upgrade page builds on the service shell (services.css) and only adds the
+   pieces the account page does not have: a status strip, plan cards, and the
+   "what is true today" facts. Tokens stay the same sage/sand palette. */
+
+.upgrade-page {
+  padding-bottom: 72px;
+}
+.upgrade-lead {
+  max-width: 620px;
+  margin: 0 0 26px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #5c6553;
+}
+.plan-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  border: 1px solid #e0e6d5;
+  border-radius: 10px;
+  background: #f7f9f1;
+}
+.plan-status > div > span {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #626b59;
+}
+.plan-status > div > strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2f3a25;
+  margin: 6px 0 4px;
+}
+.plan-status > div > small {
+  display: block;
+  font-size: 10px;
+  color: #626b59;
+}
+.plan-status-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 11px;
+}
+.plan-notice {
+  padding: 12px 14px;
+  margin: 0 0 22px;
+  border-radius: 8px;
+  border: 1px solid #dce4ce;
+  background: #eef2e4;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #56634a;
+}
+.plan-notice-warn {
+  border-color: #e8d9b8;
+  background: #fbf4e4;
+  color: #7a6432;
+}
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+  gap: 16px;
+  margin: 12px 0 26px;
+}
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #e3e8d8;
+  border-radius: 10px;
+  background: #fff;
+}
+.plan-card-current {
+  border-color: #b9c9a1;
+  box-shadow: 0 0 0 1px #d9e3c6 inset;
+}
+.plan-flag {
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e6edd7;
+  color: #5c7040;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+.plan-card h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f3a25;
+}
+.plan-sub {
+  font-size: 10px;
+  color: #626b59;
+}
+.plan-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: #26301d;
+}
+.plan-price small.plan-rate {
+  font-size: 11px;
+  font-weight: 500;
+  color: #626b59;
+}
+.plan-table {
+  display: flex;
+  flex-direction: column;
+  margin: 12px 0 26px;
+  border: 1px solid #e3e8d8;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.plan-table-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) repeat(auto-fit, minmax(88px, 1fr));
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 16px;
+  border-top: 1px solid #eef1e6;
+  font-size: 11px;
+  color: #4c5741;
+}
+.plan-table-row:first-child {
+  border-top: 0;
+}
+.plan-table-head {
+  background: #f7f9f1;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #626b59;
+}
+.plan-table-row > span > b {
+  display: block;
+  font-size: 11px;
+  color: #2f3a25;
+}
+.plan-table-row > span > small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #626b59;
+}
+@media (max-width: 720px) {
+  .plan-table-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.plan-credits {
+  margin: 0;
+  font-size: 11px;
+  color: #5f6b52;
+}
+.plan-meta {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.75;
+  color: #626b59;
+}
+.plan-benefits {
+  margin: 2px 0 8px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #4b5740;
+}
+.plan-benefits li {
+  position: relative;
+  padding-left: 16px;
+}
+.plan-benefits li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #6d8148;
+}
+.plan-card .button {
+  margin-top: auto;
+  align-self: flex-start;
+}
+.plan-card .button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.upgrade-page .service-row small {
+  color: #626b59;
+}
+.plan-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 12px 0 18px;
+}
+.plan-fact {
+  padding: 16px 18px;
+  border: 1px solid #e6eada;
+  border-radius: 8px;
+  background: #fbfcf7;
+}
+.plan-fact b {
+  font-size: 11px;
+  color: #3b462e;
+}
+.plan-fact p {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #626b59;
+}
+@media (max-width: 720px) {
+  .plan-status-actions {
+    margin-left: 0;
+  }
+}
+.upgrade-final {
+  margin: -6px 0 18px;
+  font-size: 12px;
+  color: #5c6553;
+}

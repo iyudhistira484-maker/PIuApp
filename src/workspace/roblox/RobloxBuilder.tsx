@@ -1,6 +1,6 @@
 import { nudgeOnMap } from "../../lib/roblox/map";
 import type { ViewTool } from "./SceneViewport";
-import { downloadText } from "../../lib/download";
+import { downloadBytes, downloadText } from "../../lib/download";
 import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import {
   Box,
@@ -30,9 +30,194 @@ import {
   type SceneObject,
   type RobloxScene,
 } from "../../lib/roblox/scene";
+import { bakeAtlas } from "../../lib/roblox/atlas";
+import { objectGLB } from "../../lib/roblox/glb";
+import { photoSize } from "../../lib/photo-assets";
+import type { ProjectPhotoMeta } from "../../lib/photo-assets";
+import {
+  listProjectPhotos,
+  readProjectPhoto,
+} from "../../services/project-photos";
+import { scopeFor } from "../../lib/cloud/types";
+import { projectApi } from "../../services/api";
 import StudioBridge from "./StudioBridge";
 import "./roblox.css";
 const SceneViewport = lazy(() => import("./SceneViewport"));
+/**
+ * base64 for a binary .glb, in chunks. A single String.fromCharCode(...bytes)
+ * on a multi-megabyte mesh would overflow the call stack, and this file is
+ * uploaded as JSON.
+ */
+function toBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (let at = 0; at < bytes.length; at += 0x8000)
+    binary += String.fromCharCode(...bytes.subarray(at, at + 0x8000));
+  return btoa(binary);
+}
+
+/**
+ * Export with a texture. Roblox's importer reads textures from glTF, not from
+ * OBJ, so a .glb is what makes the photo colours arrive as a real texture — and
+ * the atlas can only be baked from a photo this browser still holds.
+ */
+function TextureExport({
+  object,
+  projectId,
+}: {
+  object: SceneObject;
+  projectId: string;
+}) {
+  const user = useStore((s) => s.user);
+  const notify = useStore((s) => s.notify);
+  const [photos, setPhotos] = useState<ProjectPhotoMeta[]>([]);
+  const [chosen, setChosen] = useState("");
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const load = async () => {
+      const list = await listProjectPhotos(scopeFor(user), projectId).catch(
+        () => [],
+      );
+      setPhotos(list);
+      setChosen((current) => current || list[0]?.id || "");
+    };
+    void load();
+  }, [projectId, user]);
+  const groups = object.mesh?.groups || [];
+  const build = async (withTexture: boolean) => {
+    let texturePng: Uint8Array | undefined;
+    let atlas: Awaited<ReturnType<typeof bakeAtlas>>["plan"] | undefined;
+    if (withTexture) {
+      const photo = await readProjectPhoto(scopeFor(user), projectId, chosen);
+      if (!photo) throw new Error("Foto itu sudah tidak ada di browser ini.");
+      const baked = await bakeAtlas(photo, object.mesh!);
+      texturePng = baked.png;
+      atlas = baked.plan;
+    }
+    return { file: objectGLB(object, { texturePng }), atlas };
+  };
+  const run = async (withTexture: boolean) => {
+    setError("");
+    setBusy(withTexture ? "Menyiapkan atlas…" : "Menyiapkan GLB…");
+    try {
+      const { file, atlas } = await build(withTexture);
+      downloadBytes(
+        `${(object.name || "model").replace(/[^a-zA-Z0-9_-]/g, "-")}${withTexture ? "-bertekstur" : ""}.glb`,
+        file,
+      );
+      const patches = atlas?.patches.length || 0;
+      notify(
+        withTexture
+          ? `GLB bertesktur tersimpan: ${patches} potongan foto pada atlas ${atlas!.layout.size}px, UV per sisi. Impor di Studio lewat 3D Importer (glTF) — teksturnya ikut.`
+          : "GLB warna tersimpan (tanpa tekstur): warna tiap sisi dari foto tetap ada sebagai vertex colour.",
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Ekspor gagal.");
+    } finally {
+      setBusy("");
+    }
+  };
+  // The optional route: only a server that holds an Open Cloud key with the
+  // asset:write scope can upload for you. Without one the answer is a refusal,
+  // and the manual download above stays the way in.
+  const upload = async (withTexture: boolean) => {
+    setError("");
+    setBusy(withTexture ? "Menyiapkan atlas…" : "Menyiapkan GLB…");
+    try {
+      const { file } = await build(withTexture);
+      setBusy("Mengunggah ke Roblox…");
+      const uploaded = await projectApi(projectId, "studio/assets", {
+        name: object.name || "Mesh",
+        objectId: object.id,
+        glb: toBase64(file),
+      });
+      notify(
+        `Terunggah ke Roblox sebagai aset ${uploaded.assetId} (${uploaded.bytes} byte). ${uploaded.note || ""} Id-nya tersimpan di studio.assets.json untuk objek ini, jadi impor scene di plugin akan memakai MeshPart aset tersebut.`,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Unggahan ke Roblox gagal.",
+      );
+    } finally {
+      setBusy("");
+    }
+  };
+  return (
+    <details className="rb-glb" open>
+      <summary>Ekspor GLB (bertesktur)</summary>
+      <p>
+        glTF yang dibaca Roblox beserta teksturnya: atlas dibuat dari foto
+        project yang tersimpan di browser ini, tiap sisi memakai potongan foto
+        di area yang jadi sumber warnanya. Bukan peta UV hasil unwrap — ini
+        proyeksi kotak per sisi.
+      </p>
+      {photos.length ? (
+        <label>
+          Foto untuk atlas
+          <select
+            aria-label="Foto untuk atlas"
+            value={chosen}
+            onChange={(e) => setChosen(e.target.value)}
+          >
+            {photos.map((photo) => (
+              <option key={photo.id} value={photo.id}>
+                {photo.name} · {photoSize(photo.bytes)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p className="rb-glb-note">
+          Belum ada foto project di browser ini. Lampirkan foto di chat dan
+          minta model 3D darinya — fotonya tersimpan sebagai aset project, lalu
+          bisa dipakai sebagai tekstur di sini.
+        </p>
+      )}
+      <button
+        type="button"
+        className="rb-primary"
+        disabled={!photos.length || !!busy}
+        onClick={() => void run(true)}
+      >
+        <Download size={14} /> Unduh GLB bertesktur
+      </button>
+      <button type="button" disabled={!!busy} onClick={() => void run(false)}>
+        <Download size={14} /> GLB warna saja
+      </button>
+      <button
+        type="button"
+        disabled={!photos.length || !!busy}
+        onClick={() => void upload(true)}
+        title="Butuh kunci Open Cloud (scope asset:write) di server PiwuApp"
+      >
+        <Upload size={14} /> Unggah ke Roblox (Open Cloud)
+      </button>
+      <small className="rb-glb-note">
+        Unggah otomatis hanya jalan bila server PiwuApp punya kunci Open Cloud
+        dengan scope <code>asset:write</code>. Kalau tidak, tombol ini
+        menjelaskan kenapa dan jalur 3D Importer tetap tersedia.
+      </small>
+      {groups.length ? (
+        <small className="rb-glb-note">
+          {groups.length} grup sisi, {groups.filter((g) => g.region).length} di
+          antaranya punya area foto; UV tiap sisi mengikuti patch grupnya.
+        </small>
+      ) : (
+        <small className="rb-glb-note">
+          Objek ini belum punya grup sisi, jadi atlasnya berisi satu warna objek
+          saja.
+        </small>
+      )}
+      {busy && <small className="rb-glb-note">{busy}</small>}
+      {error && (
+        <p role="alert" className="rb-error">
+          {error}
+        </p>
+      )}
+    </details>
+  );
+}
+
 export default function RobloxBuilder({
   project,
   readOnly,
@@ -359,6 +544,7 @@ export default function RobloxBuilder({
                     key={current.id + JSON.stringify(current)}
                     object={current}
                     objects={scene.objects}
+                    projectId={project.id}
                     readOnly={readOnly}
                     onSave={(o) =>
                       commit(
@@ -410,12 +596,14 @@ export default function RobloxBuilder({
 function ObjectProperties({
   object,
   objects,
+  projectId,
   readOnly,
   onSave,
   onDelete,
 }: {
   object: SceneObject;
   objects: SceneObject[];
+  projectId: string;
   readOnly: boolean;
   onSave: (o: SceneObject) => void;
   onDelete: () => void;
@@ -579,14 +767,17 @@ function ObjectProperties({
         </button>
       </fieldset>
       {object.mesh && (
-        <button
-          type="button"
-          onClick={() =>
-            downloadText("piwu-mesh.obj", meshOBJ(object), "text/plain")
-          }
-        >
-          <Download size={14} /> Ekspor OBJ tersimpan
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              downloadText("piwu-mesh.obj", meshOBJ(object), "text/plain")
+            }
+          >
+            <Download size={14} /> Ekspor OBJ tersimpan
+          </button>
+          <TextureExport object={object} projectId={projectId} />
+        </>
       )}
     </form>
   );

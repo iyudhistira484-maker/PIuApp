@@ -66,7 +66,7 @@ export default function Auth() {
         store.setUser({
           id: data.user.id,
           email: data.user.email || "",
-          name: name || email.split("@")[0],
+          name: name || data.user.user_metadata?.name || email.split("@")[0],
           demo: false,
         });
         next();

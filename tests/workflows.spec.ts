@@ -49,9 +49,9 @@ test("landing → prompt → authenticated API → workspace → AI review → r
     .first()
     .click();
   await expect(preview.locator("body")).toHaveCSS("color", "rgb(25, 59, 50)");
-  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await page.getByRole("button", { name: "Export ZIP", exact: true }).click();
   await expect(
-    page.getByText("Belum diterbitkan", { exact: true }),
+    page.getByText(/tidak menghosting website atau memasang domain/),
   ).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Unduh kode ZIP" }).click();
@@ -128,7 +128,7 @@ test("Plan and Ask do not modify project files", async ({ page }) => {
       .first(),
   ).toBeVisible();
   const before = await files();
-  await page.getByLabel("Mode AI", { exact: true }).selectOption("Plan");
+  await page.getByLabel("Mode kerja", { exact: true }).selectOption("Plan");
   await page.getByLabel("Pesan untuk AI").fill("Buat rencana toko buku");
   await page.getByRole("button", { name: "Kirim pesan", exact: true }).click();
   await expect(page.locator(".plan-panel")).toBeVisible({ timeout: 15000 });
@@ -138,7 +138,7 @@ test("Plan and Ask do not modify project files", async ({ page }) => {
       .getByRole("button", { name: "Penyimpanan: Tersinkron ke cloud" })
       .first(),
   ).toBeVisible();
-  await page.getByLabel("Mode AI", { exact: true }).selectOption("Ask");
+  await page.getByLabel("Mode kerja", { exact: true }).selectOption("Ask");
   await page.getByLabel("Pesan untuk AI").fill("Jelaskan struktur project");
   await page.getByRole("button", { name: "Kirim pesan", exact: true }).click();
   await expect(

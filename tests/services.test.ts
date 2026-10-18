@@ -14,7 +14,6 @@ import {
   rupiah,
   paymentProvider,
 } from "../server/providers/payments.mjs";
-import { aggregateAnalytics } from "../server/routes/analytics.mjs";
 import { packageSpec } from "../server/providers/sandbox.mjs";
 test("AES-GCM rejects tampered ciphertext and cross-project/environment AAD", () => {
   const key = "a".repeat(64),
@@ -177,27 +176,6 @@ test("Registry specs reject shell injection, git and arbitrary URLs", () => {
   ])
     assert.equal(packageSpec.test(s), false, s);
 });
-test("Analytics aggregates actual events, does not invent visitors or pageviews", () => {
-  const result = aggregateAnalytics([
-    {
-      path: "/",
-      referrer: "",
-      device: "mobile",
-      visitor_hash: "one",
-      created_at: "2026-10-14T01:00:00Z",
-    },
-    {
-      path: "/a",
-      referrer: "example.com",
-      device: "desktop",
-      visitor_hash: "one",
-      created_at: "2026-10-14T02:00:00Z",
-    },
-  ]);
-  assert.equal(result.pageviews, 2);
-  assert.equal(result.dailyDevices, 1);
-  assert.equal(aggregateAnalytics([]).pageviews, 0);
-});
 test("Service API fails closed without config and rejects forged auth before privileged operations", async () => {
   let calls = 0;
   const env = {
@@ -220,7 +198,7 @@ test("Service API fails closed without config and rejects forged auth before pri
     assert.equal(res.status, 401);
     assert.equal(calls, 0);
     res = await fetch(
-      url + "/api/projects/" + crypto.randomUUID() + "/publish",
+      url + "/api/projects/" + crypto.randomUUID() + "/sandbox/command",
       {
         method: "POST",
         headers: {
@@ -242,7 +220,7 @@ test("Service API fails closed without config and rejects forged auth before pri
   }
 });
 
-test("Viewer cannot execute a shell or publish by supplying a forged actor in JSON", async () => {
+test("Viewer cannot execute a shell or run an audit by supplying a forged actor in JSON", async () => {
   const viewer = crypto.randomUUID(),
     owner = crypto.randomUUID(),
     id = crypto.randomUUID();
@@ -287,7 +265,7 @@ test("Viewer cannot execute a shell or publish by supplying a forged actor in JS
   const server = app.listen(0, "127.0.0.1");
   await new Promise<void>((r) => server.once("listening", r));
   try {
-    for (const action of ["sandbox/command", "publish", "invites"]) {
+    for (const action of ["sandbox/command", "audit", "invites"]) {
       const response = await fetch(
         "http://127.0.0.1:" +
           (server.address() as any).port +
@@ -310,6 +288,43 @@ test("Viewer cannot execute a shell or publish by supplying a forged actor in JS
   } finally {
     await new Promise<void>((r) => server.close(() => r()));
   }
+});
+
+test("attached photos are numbered, so a model can only cite a photo that exists", async () => {
+  const { attachmentParts } = await import("../server/lib/attachments.mjs");
+  const png = Buffer.from(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489" +
+      "0000000a49444154789c6300010000050001",
+    "hex",
+  ).toString("base64");
+  const parts = await attachmentParts([
+    { name: "kursi-depan.png", mime: "image/png", data: png },
+    {
+      name: "brief.txt",
+      mime: "text/plain",
+      data: Buffer.from("kursi kayu").toString("base64"),
+    },
+    { name: "kursi-samping.jpg", mime: "image/jpeg", data: "/9j/4AAQ" },
+  ]);
+  // The label lists the photos in attachment order, and only photos: a brief is
+  // not something a scene.build op may claim to have been read from.
+  assert.match(parts[0].text, /LAMPIRAN FOTO \(2\): 1 = kursi-depan\.png/);
+  assert.match(parts[0].text, /2 = kursi-samping\.jpg/);
+  assert.doesNotMatch(parts[0].text, /brief\.txt/);
+  // The photos themselves still travel as images, and the brief as untrusted text.
+  assert.deepEqual(
+    parts.map((p: any) => p.type),
+    ["text", "image_url", "text", "image_url"],
+  );
+  // No photo at all: no photo list, so no number to cite.
+  const textOnly = await attachmentParts([
+    {
+      name: "brief.txt",
+      mime: "text/plain",
+      data: Buffer.from("kursi kayu").toString("base64"),
+    },
+  ]);
+  assert.doesNotMatch(textOnly[0].text, /LAMPIRAN FOTO/);
 });
 
 test("PDF attachment is extracted in the bounded worker, not treated as a filename", async () => {

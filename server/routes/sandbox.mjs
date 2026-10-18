@@ -2,6 +2,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import { HttpError, wrap, check, capabilities } from "../lib/core.mjs";
 import { rateLimit } from "../lib/context.mjs";
+import { CREDIT_COSTS } from "../../shared/credits.mjs";
 export function registerSandbox(app, ctx, sandbox) {
   const endpoint = (path, operation) =>
     app.post(
@@ -20,7 +21,9 @@ export function registerSandbox(app, ctx, sandbox) {
         await ctx.reserve(
           req.user.id,
           requestId,
-          path === "sandbox/command" ? 1 : 2,
+          path === "sandbox/command"
+            ? CREDIT_COSTS.sandboxCommand
+            : CREDIT_COSTS.sandboxJob,
           "sandbox",
         );
         let success = false;
@@ -122,7 +125,7 @@ export function registerSandbox(app, ctx, sandbox) {
           "Lighthouse hanya tersedia untuk project Web App.",
         );
       const run = randomUUID();
-      await ctx.reserve(req.user.id, run, 3, "sandbox");
+      await ctx.reserve(req.user.id, run, CREDIT_COSTS.audit, "sandbox");
       let success = false;
       try {
         const { report } = await sandbox.build(payload.files, { audit: true });

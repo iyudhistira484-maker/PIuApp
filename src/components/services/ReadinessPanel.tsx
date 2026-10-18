@@ -17,7 +17,6 @@ const services = {
   studio: "Penyimpanan Studio Bridge",
   ai: "AI",
   sandbox: "Terminal & runtime",
-  publish: "Publikasi",
   payments: "Pembayaran",
   whatsapp: "Login WhatsApp",
   secrets: "Enkripsi secrets",

@@ -1,4 +1,9 @@
-import { userActive, projectUnlocked, enforcePlatform } from "./platform.mjs";
+import {
+  userActive,
+  projectUnlocked,
+  enforcePlatform,
+  enforcePlan,
+} from "./platform.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { HttpError, check, uuid, wrap } from "./core.mjs";
 export function createContext(env = process.env, fetcher = fetch) {
@@ -56,7 +61,8 @@ export function createContext(env = process.env, fetcher = fetch) {
     )
       throw new HttpError(401, "Akun terverifikasi diperlukan.");
     await userActive(ctx, user.id);
-    await enforcePlatform(ctx, req);
+    const settings = await enforcePlatform(ctx, req);
+    await enforcePlan(ctx, req, user, settings);
     req.user = user;
     req.db = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },

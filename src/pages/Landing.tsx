@@ -3,7 +3,23 @@ import type { ProjectKind } from "../lib/project-kinds";
 import LandingNav from "../components/landing/LandingNav";
 import HeroVideo from "../components/landing/HeroVideo";
 import "../components/landing/landing-responsive.css";
+import "../components/landing/landing-motion.css";
+import "../components/landing/landing-pricing.css";
+import "../components/landing/landing-workspace.css";
+import WorkspaceLoop from "../components/landing/WorkspaceLoop";
+import useLandingMotion, {
+  revealDelay,
+} from "../components/landing/useLandingMotion";
 import { usePlatform, PlatformNotices } from "../components/admin/Platform";
+import {
+  CREDIT_EXPIRY_MONTHS,
+  costLine,
+  expiryLabel,
+  lastsLabel,
+  mergePlans,
+  usageProfile,
+  type PlanRow,
+} from "../../shared/credits.mjs";
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -19,6 +35,7 @@ import {
   MousePointer2,
   Sparkles,
   Globe2,
+  Download,
   ShieldCheck,
   Layers,
   MessageSquare,
@@ -30,6 +47,7 @@ import PromptBox from "../components/PromptBox";
 import TemplatePreview from "../components/TemplatePreview";
 import { templates } from "../lib/templates";
 import { useStore } from "../lib/store";
+import { planBenefits } from "../lib/dashboard/plans";
 const faqs = [
   [
     "Apa itu PiwuApp?",
@@ -49,9 +67,27 @@ const faqs = [
   ],
   [
     "Apa yang tersedia pada versi ini?",
-    "Workspace memakai akun terautentikasi, penyimpanan cloud, editor kode, dan preview interaktif. AI, terminal, dan publikasi memerlukan provider aktif. Layanan yang belum siap tidak digantikan oleh simulasi.",
+    "Workspace memakai akun terautentikasi, penyimpanan cloud, editor kode, dan preview interaktif. AI, terminal, dan layanan eksternal memerlukan provider aktif. Kode keluar lewat Export ZIP; PiwuApp tidak menghosting hasil build. Layanan yang belum siap tidak digantikan oleh simulasi.",
   ],
 ];
+const thousands = (value: number) =>
+  new Intl.NumberFormat("id-ID").format(value);
+
+/** Credits and how long they last, from the ladder with admin overrides. */
+const creditHeadline = (plan: PlanRow) =>
+  plan.monthly
+    ? `${thousands(plan.credits)} kredit/bulan`
+    : `${thousands(plan.credits)} kredit/hari`;
+const creditNote = (plan: PlanRow) => {
+  if (!plan.monthly)
+    return `direset tiap hari pukul 00:00 UTC · plafon ${thousands(plan.monthlyCap || 0)} kredit/bulan`;
+  return `${thousands(plan.daily)} kredit/hari + ${lastsLabel(plan.credits, usageProfile("normal"))} pemakaian normal · ${expiryLabel(plan.expiryMonths)}`;
+};
+
+// The pricing cards read the credit ladder in shared/credits.mjs (the same
+// numbers the server sells), so the landing page cannot advertise a package
+// size that the checkout does not grant.
+
 export default function Landing() {
   const { settings: siteSettings } = usePlatform();
   const [projectKind, setProjectKind] = useState<ProjectKind>("webapp");
@@ -60,10 +96,29 @@ export default function Landing() {
   const [category, setCategory] = useState("Semua");
   const [faq, setFaq] = useState<number | null>(0);
   const [modal, setModal] = useState("");
-  const [annual, setAnnual] = useState(false);
   const navigate = useNavigate();
+  // Prices and credits follow the admin settings, falling back to the shared
+  // ladder. Daily allowances are not editable: migration 010 enforces them.
+  const plans = mergePlans(
+    siteSettings.enabled_services?.plan_overrides ??
+      siteSettings.plan_overrides,
+  );
+  const ladder = (name: string) =>
+    plans.find((plan) => plan.plan === name) || plans[0];
+  // Only 30-day plans exist at checkout, so the cards never show an annual
+  // price the store cannot charge.
+  const planCards = planBenefits(plans).map((benefit, index) => ({
+    name: benefit.plan,
+    price: thousands(ladder(benefit.plan).monthly),
+    desc: benefit.summary,
+    features: benefit.items,
+    button: ["Mulai gratis", "Saya tertarik dengan Pro", "Daftar minat Team"][
+      index
+    ],
+  }));
   const store = useStore();
   const hero = useRef<HTMLDivElement>(null);
+  useLandingMotion();
   const submit = () => {
     if (!prompt.trim()) return;
     store.setPending(prompt, mode, projectKind);
@@ -95,6 +150,7 @@ export default function Landing() {
         : templates.filter((t) => t.category === category);
   return (
     <div className="landing">
+      <div className="landing-progress" aria-hidden="true" />
       <LandingNav
         signedIn={!!store.user}
         onCategory={setCategory}
@@ -129,6 +185,7 @@ export default function Landing() {
                     <svg viewBox="0 0 325 15" preserveAspectRatio="none">
                       <path
                         d="M4 9Q163 -2 320 9M45 14Q190 5 298 12"
+                        pathLength={1}
                         stroke="currentColor"
                         strokeWidth="3"
                         fill="none"
@@ -278,7 +335,7 @@ export default function Landing() {
           </div>
         </section>
         <section className="templates-section section-container" id="templates">
-          <div className="section-heading">
+          <div className="section-heading" data-reveal="fade">
             <div>
               <div className="eyebrow-label">
                 <span /> SEBUAH TITIK AWAL
@@ -294,6 +351,8 @@ export default function Landing() {
             className="template-tabs"
             role="tablist"
             aria-label="Kategori template"
+            data-reveal="fade"
+            style={revealDelay(120)}
           >
             {categories.map((c) => (
               <button
@@ -307,7 +366,12 @@ export default function Landing() {
               </button>
             ))}
           </div>
-          <div className="template-grid">
+          <div
+            className="template-grid"
+            key={category}
+            data-reveal="fade"
+            data-stagger
+          >
             {filtered.map((t) => (
               <button
                 className="template-card"
@@ -332,7 +396,11 @@ export default function Landing() {
               </button>
             ))}
           </div>
-          <div className="template-note">
+          <div
+            className="template-note"
+            data-reveal="fade"
+            style={revealDelay(200)}
+          >
             <span>
               <Code2 size={14} /> Bukan sekadar mockup. Aplikasi sungguhan,
               dengan kode yang bisa Anda kembangkan.
@@ -343,7 +411,7 @@ export default function Landing() {
           </div>
         </section>
         <section className="how-section section-container" id="how-it-works">
-          <div className="section-heading">
+          <div className="section-heading" data-reveal="fade">
             <div>
               <div className="eyebrow-label">
                 <span /> DARI PIKIRAN KE LAYAR
@@ -356,7 +424,7 @@ export default function Landing() {
               Mulai dengan satu ide, hari ini.
             </p>
           </div>
-          <div className="steps-grid">
+          <div className="steps-grid" data-reveal data-stagger>
             <article>
               <div className="step-top">
                 <span>01</span>
@@ -395,20 +463,20 @@ export default function Landing() {
               </div>
               <h3>Siap bertemu dunia</h3>
               <p>
-                Tinjau hasilnya di berbagai perangkat. Unduh kode Anda dan
-                lanjutkan ke layanan hosting pilihan.
+                Tinjau hasilnya di berbagai perangkat, lalu unduh kode ZIP dan
+                jalankan di hosting pilihan Anda sendiri.
               </p>
               <div className="step-example">
-                <Globe2 size={15} />
-                <span>ide-anda.piwuapp.app</span>
-                <span className="coming-tag">Segera</span>
+                <Download size={15} />
+                <span>project-anda.zip</span>
+                <span className="coming-tag">Siap</span>
               </div>
             </article>
           </div>
         </section>
         <section className="features-section" id="features">
           <div className="section-container">
-            <div className="section-heading">
+            <div className="section-heading" data-reveal="fade">
               <div>
                 <div className="eyebrow-label">
                   <span /> SATU RUANG. SEMUA KEMUNGKINAN.
@@ -425,63 +493,9 @@ export default function Landing() {
                 semuanya di satu tempat yang terasa familier.
               </p>
             </div>
-            <div className="feature-layout">
-              <div className="workspace-illustration" aria-hidden="true">
-                <div className="illustration-bar">
-                  <div className="window-dots">
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                  <span>Project luar biasa Anda</span>
-                  <span>↗</span>
-                </div>
-                <div className="illustration-body">
-                  <aside>
-                    <Code2 size={16} />
-                    <Layers size={16} />
-                    <Globe2 size={16} />
-                  </aside>
-                  <div className="illustration-code">
-                    <div>
-                      <span className="blue-text">&lt;IdeAnda</span>
-                    </div>
-                    <div>
-                      &nbsp; inspirasi=
-                      <span className="green-text">"tanpa batas"</span>
-                    </div>
-                    <div>
-                      &nbsp; dibuat=
-                      <span className="green-text">"bersama PiwuApp"</span>
-                    </div>
-                    <div>
-                      <span className="blue-text">/&gt;</span>
-                    </div>
-                    <div className="illustration-preview">
-                      <span>Halo, dunia.</span>
-                      <div />
-                      <small>INI BARU PERMULAAN ↗</small>
-                    </div>
-                  </div>
-                  <div className="illustration-chat">
-                    <span className="ai-badge">✳</span>
-                    <p>
-                      Mari wujudkan
-                      <br />
-                      ide Anda.
-                    </p>
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line short" />
-                    <div className="illustration-success">
-                      <Check size={12} /> Preview siap
-                    </div>
-                    <div className="fake-input">
-                      Apa selanjutnya? <ArrowRight size={12} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="feature-list">
+            <div className="feature-layout" data-reveal>
+              <WorkspaceLoop />
+              <div className="feature-list" data-reveal data-stagger>
                 {[
                   {
                     icon: MessageSquare,
@@ -519,68 +533,19 @@ export default function Landing() {
           </div>
         </section>
         <section className="pricing-section section-container" id="pricing">
-          <div className="pricing-heading">
+          <div className="pricing-heading" data-reveal="fade">
             <div className="eyebrow-label">
               <span /> RUANG UNTUK BERTUMBUH
             </div>
             <h2>Mulai kecil. Bermimpi besar.</h2>
-            <p>Pilih ruang yang tepat untuk perjalanan Anda.</p>
-            <div className="billing-toggle">
-              <button
-                className={!annual ? "active" : ""}
-                aria-pressed={!annual}
-                onClick={() => setAnnual(false)}
-              >
-                Bulanan
-              </button>
-              <button
-                className={annual ? "active" : ""}
-                aria-pressed={annual}
-                onClick={() => setAnnual(true)}
-              >
-                Tahunan <span>−20%</span>
-              </button>
-            </div>
+            <p>
+              Pilih ruang yang tepat untuk perjalanan Anda. Semua paket memakai
+              builder, template, AI, dan kolaborasi yang sama — yang berbeda
+              adalah harga dan jumlah kreditnya.
+            </p>
           </div>
-          <div className="pricing-grid">
-            {[
-              {
-                name: "Free",
-                price: "0",
-                desc: "Untuk ide pertama dan rasa penasaran.",
-                features: [
-                  "3 project lokal",
-                  "Template siap pakai",
-                  "Editor kode & live preview",
-                  "Export kode ZIP",
-                ],
-                button: "Mulai gratis",
-              },
-              {
-                name: "Pro",
-                price: annual ? "159.200" : "199.000",
-                desc: "Untuk yang siap membangun lebih jauh.",
-                features: [
-                  "Semua fitur Free",
-                  "Kredit AI bulanan lebih besar",
-                  "Project tanpa batas",
-                  "Custom domain & prioritas AI",
-                ],
-                button: "Saya tertarik dengan Pro",
-              },
-              {
-                name: "Team",
-                price: annual ? "399.200" : "499.000",
-                desc: "Ide besar lebih baik dibangun bersama.",
-                features: [
-                  "Semua fitur Pro",
-                  "Workspace bersama",
-                  "Role & kontrol akses",
-                  "Tagihan terpusat",
-                ],
-                button: "Daftar minat Team",
-              },
-            ].map((p, i) => (
+          <div className="pricing-grid" data-reveal data-stagger>
+            {planCards.map((p, i) => (
               <article
                 key={p.name}
                 className={"pricing-card " + (i === 1 ? "featured" : "")}
@@ -593,9 +558,19 @@ export default function Landing() {
                 <h3>{p.name}</h3>
                 <p>{p.desc}</p>
                 <div className="price">
-                  <small>Rp</small>
-                  {p.price}
-                  <span>/ bulan</span>
+                  {p.name === "Free" ? (
+                    <span className="price-value">Gratis</span>
+                  ) : (
+                    <>
+                      <small>Rp</small>
+                      <span className="price-value">{p.price}</span>
+                      <span>/ bulan</span>
+                    </>
+                  )}
+                </div>
+                <div className="pricing-credit">
+                  <b>{creditHeadline(ladder(p.name))}</b>
+                  <span>{creditNote(ladder(p.name))}</span>
                 </div>
                 <button
                   className={
@@ -623,14 +598,27 @@ export default function Landing() {
               </article>
             ))}
           </div>
+          <p className="pricing-note">
+            Harga di atas berlaku 30 hari. Semua paket membuka builder yang
+            sama: tidak ada fitur yang dikunci per paket. Jatah harian direset
+            setiap hari pukul 00:00 UTC dan tidak menumpuk; kredit paket{" "}
+            {expiryLabel(CREDIT_EXPIRY_MONTHS.plan)}, kredit top-up berlaku{" "}
+            {CREDIT_EXPIRY_MONTHS.topup} bulan. Perkiraan durasi di atas
+            dihitung dari biaya nyata per operasi ({costLine()}), jadi angkanya
+            aritmetika, bukan janji.
+          </p>
         </section>
-        <section className="security-strip section-container" id="security">
+        <section
+          className="security-strip section-container"
+          id="security"
+          data-reveal="fade"
+        >
           <ShieldCheck size={29} />
           <div>
             <h3>Ide Anda berharga. Begitu juga data Anda.</h3>
             <p>
               Preview terisolasi, kode milik Anda, dan konfigurasi akses
-              berbasis peran untuk deployment cloud.
+              berbasis peran untuk project cloud.
             </p>
           </div>
           <button
@@ -641,7 +629,7 @@ export default function Landing() {
           </button>
         </section>
         <section className="faq-section section-container" id="faq">
-          <div>
+          <div data-reveal="fade">
             <div className="eyebrow-label">
               <span /> SEBELUM ANDA MULAI
             </div>
@@ -656,7 +644,7 @@ export default function Landing() {
               sedang Anda pikirkan.
             </p>
           </div>
-          <div className="faq-list">
+          <div className="faq-list" data-reveal="fade" data-stagger>
             {faqs.map(([q, a], i) => (
               <article key={q} className={faq === i ? "expanded" : ""}>
                 <button
@@ -684,7 +672,7 @@ export default function Landing() {
         </section>
       </main>
       <footer className="site-footer section-container">
-        <div className="footer-top">
+        <div className="footer-top" data-reveal="fade">
           <div>
             <Logo />
             <p>
@@ -720,7 +708,11 @@ export default function Landing() {
             </button>
           </div>
         </div>
-        <div className="footer-bottom">
+        <div
+          className="footer-bottom"
+          data-reveal="fade"
+          style={revealDelay(140)}
+        >
           <span>
             © {new Date().getFullYear()} PiwuApp. Dibuat untuk mewujudkan ide.
           </span>

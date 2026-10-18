@@ -44,14 +44,12 @@ export function registerWhatsApp(app, ctx) {
       const id = req.get("webhook-id"),
         bodyHash = hash(raw);
       const db = ctx.needAdmin();
-      let claimed = await db
-        .from("webhook_receipts")
-        .insert({
-          provider: "whatsapp",
-          event_id: id,
-          body_hash: bodyHash,
-          status: "processing",
-        });
+      let claimed = await db.from("webhook_receipts").insert({
+        provider: "whatsapp",
+        event_id: id,
+        body_hash: bodyHash,
+        status: "processing",
+      });
       if (claimed.error?.code === "23505") {
         const previous = check(
           await db

@@ -51,7 +51,7 @@ export default function TemplatePreview({
             <b>Ringkasan</b>
             <span>Oktober 2026⌄</span>
           </nav>
-          <p>Selamat datang kembali, Dinda 👋</p>
+          <p>Data per 18 Oktober 2026</p>
           <div className="mini-metrics">
             <div>
               <small>Total pendapatan</small>
@@ -95,7 +95,62 @@ export default function TemplatePreview({
         </main>
       </div>
     );
-  if (type === "shop" || type === "pos")
+  if (type === "pos")
+    return (
+      <div className="template-preview mini-pos">
+        <header>
+          <b>
+            kasir <span>pintar</span>
+          </b>
+          <small>Shift pagi · Meja 04</small>
+          <span className="mini-pos-clock">09:41</span>
+        </header>
+        <div className="mini-pos-body">
+          <div className="mini-pos-catalog">
+            <div className="mini-pos-search">Cari produk</div>
+            <div className="mini-pos-items">
+              {[
+                ["Kopi susu", "24.000"],
+                ["Roti bakar", "18.000"],
+                ["Air mineral", "6.000"],
+                ["Es teh", "10.000"],
+              ].map(([name, price], index) => (
+                <div key={name} className={"mini-pos-item tone-" + index}>
+                  <i />
+                  <small>{name}</small>
+                  <b>Rp {price}</b>
+                </div>
+              ))}
+            </div>
+          </div>
+          <aside className="mini-pos-cart">
+            <b>Pesanan</b>
+            <div>
+              <span>Kopi susu × 2</span>
+              <small>48.000</small>
+            </div>
+            <div>
+              <span>Roti bakar × 1</span>
+              <small>18.000</small>
+            </div>
+            <div className="mini-pos-meta">
+              <small>Subtotal</small>
+              <small>66.000</small>
+            </div>
+            <div className="mini-pos-meta">
+              <small>Pajak 10%</small>
+              <small>6.600</small>
+            </div>
+            <div className="mini-pos-total">
+              <small>Total</small>
+              <b>Rp 72.600</b>
+            </div>
+            <span className="mini-pos-pay">Bayar</span>
+          </aside>
+        </div>
+      </div>
+    );
+  if (type === "shop")
     return (
       <div className="template-preview mini-shop">
         <nav>
@@ -106,14 +161,14 @@ export default function TemplatePreview({
           <ShoppingBag size={10} />
         </nav>
         <div className="mini-shop-hero">
-          <small>HAL-HAL BAIK UNTUK SETIAP HARI</small>
+          <small>KERAMIK & PERABOT RUMAH</small>
           <h3>
-            Sederhana.
+            Keramik
             <br />
-            Tapi istimewa.
+            untuk harian.
           </h3>
           <span>
-            Temukan objek favoritmu <ArrowRight size={9} />
+            Lihat koleksi <ArrowRight size={9} />
           </span>
           <div className="vase vase-one" />
           <div className="vase vase-two" />
@@ -152,9 +207,9 @@ export default function TemplatePreview({
         </nav>
         <small>DESAINER INDEPENDEN · JAKARTA</small>
         <h3>
-          Ide yang berani.
+          Desain visual
           <br />
-          Karya yang <em>berarti.</em>
+          dan <em>identitas.</em>
           <ArrowUpRight size={26} />
         </h3>
         <div className="portfolio-bottom">
@@ -170,12 +225,27 @@ export default function TemplatePreview({
           <div className="portfolio-note">
             <span>01 / PILIHAN KARYA</span>
             <p>
-              Menjembatani ide
+              Identitas visual
               <br />
-              dan pengalaman.
+              untuk brand.
             </p>
             <Circle size={24} />
           </div>
+        </div>
+      </div>
+    );
+  if (type === "invitation")
+    return (
+      <div className="template-preview mini-invitation">
+        <div className="mini-invitation-frame">
+          <small>Undangan pernikahan</small>
+          <h3>
+            Nara <em>&</em> Arya
+          </h3>
+          <span className="mini-invitation-date">12 · 12 · 2026</span>
+          <p>Surabaya, Jawa Timur</p>
+          <span className="mini-invitation-cta">Konfirmasi kehadiran</span>
+          <footer>Resepsi · 18.00 WIB</footer>
         </div>
       </div>
     );
@@ -199,14 +269,14 @@ export default function TemplatePreview({
       </nav>
       <div className="studio-copy">
         <small>
-          {type === "umkm" ? "DIRACIK DENGAN HATI" : "RUANG BAIK, HIDUP BAIK."}
+          {type === "umkm" ? "KEDAI KOPI · SURABAYA" : "STUDIO DESAIN INTERIOR"}
         </small>
         <h3>
           {type === "umkm" ? (
             <>
-              Sore yang baik,
+              Kopi untuk
               <br />
-              kopi yang hangat.
+              pagi yang sibuk.
             </>
           ) : type === "invitation" ? (
             <>
@@ -216,15 +286,22 @@ export default function TemplatePreview({
             </>
           ) : (
             <>
-              Ruang untuk
+              Ruang yang
               <br />
-              cerita baru.
+              dibuat untuk
+              <br />
+              dipakai.
             </>
           )}
         </h3>
-        <p>Desain yang terasa seperti rumah.</p>
+        <p>
+          {type === "umkm"
+            ? "Biji lokal, disangrai mingguan."
+            : "Interior residensial dan komersial."}
+        </p>
         <span>
-          Temukan inspirasi <ArrowUpRight size={9} />
+          {type === "umkm" ? "Lihat menu" : "Lihat project"}{" "}
+          <ArrowUpRight size={9} />
         </span>
       </div>
       <div className="studio-arch">
@@ -238,7 +315,7 @@ export default function TemplatePreview({
         </div>
       </div>
       <div className="studio-bottom">
-        <span>DIRANCANG DENGAN HATI.</span>
+        <span>{type === "umkm" ? "SURABAYA · 2026" : "JAKARTA · 2026"}</span>
         <span>01 — 04</span>
       </div>
     </div>

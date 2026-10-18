@@ -220,13 +220,6 @@
 .landing .illustration-code {
   min-width: 0;
 }
-.landing .billing-toggle button {
-  min-height: 44px;
-  font-size: 13px;
-}
-.landing .billing-toggle button span {
-  font-size: 10px;
-}
 .landing .pricing-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
@@ -256,6 +249,30 @@
   font-size: 13px;
   min-height: 46px;
   padding-inline: 12px;
+}
+.landing .pricing-credit {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: -10px 0 20px;
+}
+.landing .pricing-credit b {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2f3a25;
+}
+.landing .pricing-credit span {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #647057;
+}
+.landing .pricing-note {
+  max-width: 760px;
+  margin: 20px auto 0;
+  font-size: 11px;
+  line-height: 1.85;
+  text-align: center;
+  color: #647057;
 }
 .landing .price-feature {
   font-size: 13px;
@@ -609,7 +626,6 @@
   :is(
     .eyebrow-label,
     .template-tabs button,
-    .billing-toggle button,
     .footer-top p,
     .footer-top h4,
     .footer-bottom,
@@ -620,9 +636,6 @@
 }
 .landing .footer-top > div > :is(a:not(.logo), button) {
   color: #5e6a54;
-}
-.landing .billing-toggle button span {
-  color: #526237;
 }
 .landing .step-top > span {
   color: #657256;

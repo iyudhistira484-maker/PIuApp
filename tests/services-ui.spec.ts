@@ -1,4 +1,5 @@
 import { realAccountFixture, loginRealFixture } from "./helpers-real";
+import { signedIn } from "./helpers-account";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 async function workspace(page: any) {
@@ -25,7 +26,7 @@ async function workspace(page: any) {
     page.getByRole("button", { name: "Hentikan respons" }),
   ).toHaveCount(0, { timeout: 20000 });
 }
-test("cloud services show configuration state and never fake a paid/publish success", async ({
+test("cloud services show configuration state and never fake a paid success", async ({
   page,
 }) => {
   await workspace(page);
@@ -37,13 +38,13 @@ test("cloud services show configuration state and never fake a paid/publish succ
   await expect(
     dialog.getByText("Belum dikonfigurasi", { exact: true }).first(),
   ).toBeVisible();
-  await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+  // Publishing is not a service of a builder: no tab, no dead button.
   await expect(
-    dialog.getByRole("button", { name: "Build & publish" }),
-  ).toBeDisabled();
+    dialog.getByRole("button", { name: "Publish", exact: true }),
+  ).toHaveCount(0);
   await expect(
-    dialog.getByText("Belum diterbitkan", { exact: true }),
-  ).toBeVisible();
+    dialog.getByRole("button", { name: "Analytics", exact: true }),
+  ).toHaveCount(0);
   await dialog.getByRole("button", { name: "Anggota", exact: true }).click();
   await dialog.getByRole("button", { name: "Buat undangan" }).click();
   await expect(dialog.getByRole("alert")).toContainText(
@@ -86,6 +87,60 @@ test("snapshot recording has isolated playback, scrubber and persistent local li
     dialog.getByLabel("Rekaman tersimpan").locator("option"),
   ).toHaveCount(2);
 });
+test("the account page states the plan's daily allowance and its reset clock", async ({
+  page,
+}) => {
+  await signedIn(page, {});
+  await page.goto("/account");
+  const planCard = page.locator(".service-card", { hasText: "Paket gratis" });
+  // The allowance, the countdown and what is left of today come from
+  // `GET /api/account` — the database's own numbers.
+  await expect(planCard.locator(".credit-daily")).toHaveAttribute(
+    "data-credits",
+    "database",
+  );
+  await expect(planCard.locator(".credit-daily")).toContainText(
+    "20 kredit/hari · direset 00:00 UTC (dalam",
+  );
+  await expect(planCard.locator(".credit-daily")).toContainText(
+    "sisa hari ini 12",
+  );
+  // Free has a monthly ceiling, so the usage against it is stated too.
+  await expect(planCard.locator(".credit-cap")).toContainText(
+    "Plafon 600 kredit/bulan · terpakai 120",
+  );
+  // The balance card keeps the deadlines, not a promise that credits never end.
+  await expect(
+    page.locator(".service-card").first().locator("small"),
+  ).toContainText("kredit paket & top-up ada masa berlaku");
+});
+
+test("the account page says which migration is missing instead of inventing a quota", async ({
+  page,
+}) => {
+  await signedIn(page, {
+    credits: {
+      applied: false,
+      source: "migration",
+      note: "Jatah harian dan masa berlaku kredit belum aktif di database ini: terapkan migration 010_credit_lots.sql. Saldo tetap seperti yang tercatat.",
+    },
+  });
+  await page.goto("/account");
+  const planCard = page.locator(".service-card", { hasText: "Paket gratis" });
+  await expect(planCard.locator(".credit-daily")).toHaveAttribute(
+    "data-credits",
+    "migration",
+  );
+  await expect(planCard.locator(".credit-daily")).toContainText(
+    "terapkan migration 010_credit_lots.sql",
+  );
+  // No number is claimed for a database that is not granting one.
+  await expect(planCard.locator(".credit-daily")).not.toContainText(
+    "kredit/hari",
+  );
+  await expect(planCard.locator(".credit-cap")).toHaveCount(0);
+});
+
 test("account requires real auth; marketplace gives honest unavailable state; login form a11y", async ({
   page,
 }) => {

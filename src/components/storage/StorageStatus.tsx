@@ -22,6 +22,7 @@ import { useStore } from "../../lib/store";
 import { scopeFor } from "../../lib/cloud/types";
 import { requestCloudSync } from "../../lib/cloud/sync";
 import { Modal } from "../ui";
+import BackupPanel from "./BackupPanel";
 import "./storage.css";
 export function StorageStatus({
   projectId,
@@ -173,7 +174,7 @@ export function StorageDialog({ onClose }: { onClose: () => void }) {
   const storageError = useStorageHealth((s) => s.error);
   const local = scopeFor(s.user) === "demo";
   const [selected, setSelected] = useState<string[]>([]);
-  const [tab, setTab] = useState<"status" | "import">("status");
+  const [tab, setTab] = useState<"status" | "import" | "backup">("status");
   const [conflictId, setConflictId] = useState("");
   const [discard, setDiscard] = useState(false);
   const conflict = s.sync[conflictId];
@@ -421,8 +422,16 @@ export function StorageDialog({ onClose }: { onClose: () => void }) {
                   >
                     Impor dari demo <span>{demos.length}</span>
                   </button>
+                  <button
+                    className={tab === "backup" ? "active" : ""}
+                    onClick={() => setTab("backup")}
+                  >
+                    Cadangan
+                  </button>
                 </div>
-                {tab === "status" ? (
+                {tab === "backup" ? (
+                  <BackupPanel />
+                ) : tab === "status" ? (
                   <>
                     {s.connection.error && (
                       <p className="storage-error" role="alert">

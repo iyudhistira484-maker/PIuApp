@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import {
   wrap,
   HttpError,
@@ -18,7 +19,20 @@ import {
   bundleSchema,
   validateBundle,
   canonical,
+  STUDIO_PLUGIN,
 } from "../../shared/studio.mjs";
+import {
+  SCENE_ASSET_FILE,
+  SCENE_FILE,
+  parseScene,
+  readSceneAssets,
+  sceneSummary,
+} from "../lib/roblox-scene.mjs";
+import {
+  openCloudConfig,
+  operationState,
+  uploadModel,
+} from "../lib/open-cloud.mjs";
 export function registerStudio(app, ctx) {
   const table = () => ctx.needAdmin().from("studio_bridges");
   const get = async (id) =>
@@ -88,6 +102,9 @@ export function registerStudio(app, ctx) {
           ? {
               connected: alive(row),
               expiresAt: row.expires_at,
+              // When the snapshot was stored: the AI reads this same snapshot,
+              // so the panel can say how fresh the context is.
+              updatedAt: row.updated_at,
               snapshot: row.snapshot,
               state: row.state,
               receipt: row.receipt,
@@ -190,8 +207,91 @@ export function registerStudio(app, ctx) {
         "Jenis project berubah; pasangkan project Roblox yang benar.",
       );
     req.bridge = row;
+    req.bridgePayload = payload;
     next();
   });
+  app.get(
+    "/api/studio/status",
+    rateLimit({ max: 60 }),
+    plugin,
+    wrap(async (req, res) => {
+      const payload = req.bridgePayload,
+        files = payload.files || {};
+      const stored = readSceneAssets(files[SCENE_ASSET_FILE]);
+      let scene = null,
+        sceneProblem = "";
+      try {
+        scene = parseScene(files[SCENE_FILE]);
+      } catch (error) {
+        sceneProblem =
+          error instanceof HttpError
+            ? error.message
+            : "Scene project tidak terbaca.";
+      }
+      res.json({
+        plugin: { version: STUDIO_PLUGIN.version },
+        project: {
+          id: req.bridge.project_id,
+          name: String(payload.name || "Project"),
+          kind: payload.kind || "roblox",
+        },
+        bridge: {
+          state: req.bridge.state,
+          expiresAt: req.bridge.expires_at,
+          snapshotNodes: req.bridge.snapshot?.nodes?.length || 0,
+          placeId: req.bridge.snapshot?.placeId || "",
+          queuedChanges:
+            req.bridge.state === "queued"
+              ? req.bridge.bundle?.changes?.length || 0
+              : 0,
+          receipt: req.bridge.receipt || null,
+        },
+        scene: scene ? sceneSummary(scene, stored.assets) : null,
+        sceneProblem,
+        assets: {
+          configured: openCloudConfig(ctx.env).configured,
+          problem: stored.problem,
+        },
+        limits: STUDIO_PLUGIN.limits,
+      });
+    }),
+  );
+  app.get(
+    "/api/studio/scene",
+    rateLimit({ max: 30 }),
+    plugin,
+    wrap(async (req, res) => {
+      const payload = req.bridgePayload,
+        files = payload.files || {};
+      const scene = parseScene(files[SCENE_FILE]);
+      const stored = readSceneAssets(files[SCENE_ASSET_FILE]);
+      const summary = sceneSummary(scene, stored.assets);
+      const notes = [
+        "Scene ini dibangun sebagai Part/Model; mesh kustom hanya bisa masuk lewat aset Roblox atau impor GLB manual.",
+      ];
+      if (summary.meshes.withoutAsset)
+        notes.push(
+          `${summary.meshes.withoutAsset} mesh kustom belum punya aset Roblox: ${summary.meshes.missing.join(", ")}. ${
+            openCloudConfig(ctx.env).configured
+              ? "Unggah dari panel Properti di PiwuApp supaya plugin bisa menyisipkannya."
+              : "Server ini belum dikonfigurasi untuk unggah aset; pakai Ekspor GLB lalu impor manual di Studio."
+          }`,
+        );
+      if (stored.problem) notes.push(stored.problem);
+      res.json({
+        project: {
+          id: req.bridge.project_id,
+          name: String(payload.name || ""),
+        },
+        revision: req.bridge.updated_at || "",
+        scene,
+        assets: stored.assets,
+        assetsConfigured: openCloudConfig(ctx.env).configured,
+        summary,
+        notes,
+      });
+    }),
+  );
   app.post(
     "/api/studio/snapshot",
     rateLimit({ max: 30 }),
@@ -240,6 +340,66 @@ export function registerStudio(app, ctx) {
         bundle: req.bridge.state === "queued" ? req.bridge.bundle : null,
       }),
     ),
+  );
+  const assetGuard = [ctx.auth, ctx.project("Editor")];
+  app.post(
+    "/api/projects/:id/studio/assets",
+    ...assetGuard,
+    rateLimit({ max: 4 }),
+    wrap(async (req, res) => {
+      const body = z
+        .object({
+          name: z.string().trim().min(1).max(80),
+          objectId: z.string().regex(/^[\w:.-]{1,100}$/),
+          glb: z
+            .string()
+            .min(32)
+            .max(12 * 1024 * 1024),
+        })
+        .strict()
+        .parse(req.body);
+      const buffer = Buffer.from(body.glb, "base64");
+      if (!buffer.length)
+        throw new HttpError(400, "Berkas GLB yang dikirim kosong.");
+      const config = openCloudConfig(ctx.env);
+      if (!config.configured)
+        throw new HttpError(
+          503,
+          "Unggah aset ke Roblox belum dikonfigurasi di server ini: isi ROBLOX_OPEN_CLOUD_KEY dan ROBLOX_ASSET_CREATOR_ID (docs/SERVICES_SETUP.md). Jalur manual tetap tersedia: Ekspor GLB di panel Properti lalu impor di Studio.",
+        );
+      const result = await uploadModel(
+        {
+          fetcher: ctx.fetcher,
+          config,
+          name: `${body.name} (PiwuApp)`,
+          description: `Model PiwuApp project ${req.project.id} (objek ${body.objectId}).`,
+        },
+        buffer,
+      );
+      res.json({
+        ...result,
+        objectId: body.objectId,
+        bytes: buffer.length,
+        creator: `${config.creatorType}:${config.creatorId}`,
+        notice:
+          "Aset 3D masuk moderasi Roblox. Id aset bisa muncul sebelum aset benar-benar bisa dipakai, dan plugin memakai InsertService:LoadAsset — periksa di Studio.",
+      });
+    }),
+  );
+  app.get(
+    "/api/projects/:id/studio/assets",
+    ...assetGuard,
+    rateLimit({ max: 30 }),
+    wrap(async (req, res) => {
+      const config = openCloudConfig(ctx.env);
+      if (!config.configured)
+        throw new HttpError(503, "Unggah aset ke Roblox belum dikonfigurasi.");
+      const operation = String(req.query.operation || "");
+      res.json({
+        operation,
+        ...(await operationState({ fetcher: ctx.fetcher, config }, operation)),
+      });
+    }),
   );
   app.post(
     "/api/studio/claim",

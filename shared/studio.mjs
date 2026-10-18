@@ -1,4 +1,25 @@
 import { z } from "zod";
+/**
+ * The Studio plugin the app tells people to install. The version is published
+ * here so the web panel, the server and the plugin file itself can be checked
+ * against one number — tests/studio-plugin.test.ts fails if they drift apart,
+ * which is the only warning a user gets that their installed copy is old.
+ */
+export const STUDIO_PLUGIN = {
+  version: "2.2.0",
+  file: "PiwuStudio.luau",
+  /** The one-download install: a Script wrapped in XML for the Plugins folder. */
+  bundle: "PiwuStudio.rbxmx",
+  name: "PiwuStudio",
+  limits: {
+    nodes: 750,
+    scripts: 140,
+    sourceBytes: 100000,
+    snapshotBytes: 4000000,
+    changes: 300,
+    sceneObjects: 250,
+  },
+};
 export const editableClasses = [
   "Folder",
   "Model",

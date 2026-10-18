@@ -42,17 +42,15 @@ export function registerAssets(app, ctx) {
         `${req.project.id}:${data.environment}:${data.key}`,
       );
       check(
-        await ctx.admin
-          .from("env_vars")
-          .upsert(
-            {
-              project_id: req.project.id,
-              key: data.key,
-              environment: data.environment,
-              encrypted_value: "\\x" + ciphertext,
-            },
-            { onConflict: "project_id,key,environment" },
-          ),
+        await ctx.admin.from("env_vars").upsert(
+          {
+            project_id: req.project.id,
+            key: data.key,
+            environment: data.environment,
+            encrypted_value: "\\x" + ciphertext,
+          },
+          { onConflict: "project_id,key,environment" },
+        ),
       );
       res.json({ saved: true, key: data.key, environment: data.environment });
     }),

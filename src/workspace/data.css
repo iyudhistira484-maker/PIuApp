@@ -130,3 +130,223 @@
     width: 100%;
   }
 }
+
+.app-api {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ide-line, #303846);
+}
+.app-api h2,
+.app-api h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 6px;
+  color: var(--ide-text, #e2e8f0);
+  font-size: 15px;
+}
+.app-api h3 {
+  margin-top: 22px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ide-accent, #a9b7c9);
+}
+.app-api-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.app-api-head p,
+.app-api-note,
+.app-api small {
+  margin: 0 0 8px;
+  color: var(--ide-accent, #b1c4df);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.app-api code {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.app-api-error,
+.app-api-ok {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.app-api-error {
+  border: 1px solid #7f1d1d;
+  background: #2a1416;
+  color: #fecaca;
+}
+.app-api-ok {
+  border: 1px solid #14532d;
+  background: #10231a;
+  color: #bbf7d0;
+}
+.app-api-secret {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #8a6d1f;
+  border-radius: 8px;
+  background: #241f10;
+}
+.app-api-secret strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fde68a;
+  font-size: 13px;
+}
+.app-api-secret code {
+  display: block;
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 5px;
+  background: #10141a;
+  color: #f8fafc;
+  word-break: break-all;
+}
+.app-api-secret > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.app-api-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.app-api-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ide-accent, #cbd5e1);
+}
+.app-api-form input,
+.app-api-form select {
+  padding: 7px 9px;
+  border: 1px solid var(--ide-line, #3b4656);
+  border-radius: 6px;
+  background: var(--ide-input, #171c24);
+  color: var(--ide-text, #e2e8f0);
+  font-size: 13px;
+}
+.app-api-form input:focus-visible,
+.app-api-form select:focus-visible {
+  outline: 2px solid #93b4e6;
+  outline-offset: 1px;
+}
+.app-api .app-api-form > p {
+  flex-basis: 100%;
+}
+.app-api-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--ide-line, #3b4656);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ide-text, #e2e8f0);
+  font-size: 12px;
+  cursor: pointer;
+}
+.app-api-action:hover {
+  background: #232b37;
+}
+.app-api-action:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.app-api-danger {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+.app-api-keys {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0;
+}
+.app-api-keys article {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--ide-line, #303846);
+  border-radius: 8px;
+  background: var(--ide-panel, #1b212b);
+}
+.app-api-keys article > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.app-api-keys article > small {
+  flex-basis: 100%;
+  margin: 0;
+}
+.app-api-keys article.revoked {
+  opacity: 0.65;
+}
+.app-api-scope {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid #3b4656;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+.app-api-scope.write {
+  border-color: #8a6d1f;
+  color: #fde68a;
+}
+.app-api-scope.revoked {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+.app-api-revoke {
+  display: flex;
+  gap: 8px;
+}
+.app-api-endpoints {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+.app-api-endpoints > div {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.app-api-endpoints code {
+  color: #dbeafe;
+}
+.app-api-example {
+  margin: 8px 0 12px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--ide-line, #303846);
+  border-radius: 8px;
+  background: #10141a;
+  color: #d7e2f0;
+  line-height: 1.5;
+}
+@media (max-width: 700px) {
+  .app-api-form label,
+  .app-api-form button {
+    flex: 1;
+    min-width: 150px;
+  }
+}

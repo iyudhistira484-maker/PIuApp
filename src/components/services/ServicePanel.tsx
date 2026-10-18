@@ -42,8 +42,6 @@ export default function ServicePanel({
   } catch {}
   const routes: Record<string, string> = {
     invite: "members",
-    publish: "deployments",
-    analytics: "analytics",
     security: "audits",
     secrets: "secrets",
     assets: "assets",
@@ -93,13 +91,6 @@ export default function ServicePanel({
       alive = false;
     };
   }, [kind, projectId, user?.id]);
-  useEffect(() => {
-    if (kind !== "publish" || !cloud) return;
-    const timer = setInterval(() => {
-      void load().catch(() => {});
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [kind, cloud, projectId]);
   const btn = (label: string, fn: () => Promise<any>, enabled = true) => (
     <button
       className="primary"
@@ -115,13 +106,12 @@ export default function ServicePanel({
         <div className="service-notice">
           Layanan cloud belum tersedia untuk sesi ini. Masuk dengan akun
           Supabase dan konfigurasi environment server. Tidak ada email,
-          pembayaran, atau deployment yang disimulasikan.
+          pembayaran, atau audit yang disimulasikan.
         </div>
       )}
-      {!webRuntime && ["publish", "packages", "security"].includes(kind) && (
+      {!webRuntime && ["packages", "security"].includes(kind) && (
         <p className="service-notice" role="status">
-          Runtime Vite, instalasi npm sandbox, Lighthouse dan hosting ini khusus
-          Web App.{" "}
+          Runtime Vite, instalasi npm sandbox dan Lighthouse ini khusus Web App.{" "}
           {projectKind === "roblox"
             ? "Gunakan Roblox Studio untuk menjalankan dan mempublikasikan game."
             : "Gunakan Expo untuk menjalankan atau membangun aplikasi native."}{" "}
@@ -221,151 +211,6 @@ export default function ServicePanel({
                 </button>
               </div>
             ))}
-        </>
-      )}
-      {kind === "publish" && (
-        <>
-          <p>
-            Snapshot cloud dibangun di sandbox. Lighthouse harus ≥60 untuk
-            performa, SEO, dan aksesibilitas. Biaya 5 kredit; dikembalikan jika
-            gagal.
-          </p>
-          {btn(
-            "Build & publish",
-            async () => {
-              await request("publish", {});
-              setNotice(
-                "Build masuk antrean. Status di bawah diperbarui otomatis.",
-              );
-            },
-            owner && webRuntime && status?.capabilities?.publish,
-          )}
-          {data?.site &&
-            btn(
-              "Hentikan publikasi",
-              async () => {
-                if (
-                  !confirm(
-                    "Hapus aplikasi publik dari hosting? Kode workspace tetap tersimpan.",
-                  )
-                )
-                  return;
-                await request("publish", undefined, "DELETE");
-                setNotice(
-                  "Publikasi dihentikan. Perubahan DNS/cache eksternal dapat membutuhkan waktu.",
-                );
-              },
-              owner,
-            )}
-          {data?.site && (
-            <div className="service-notice">
-              <a href={data.site.url} target="_blank" rel="noreferrer">
-                Buka aplikasi publik ↗
-              </a>
-              <p>
-                {data.site.custom_domain} {data.site.domain_status}
-              </p>
-            </div>
-          )}
-          {data?.jobs?.map((j: any) => (
-            <div className="service-row" key={j.id}>
-              <div>
-                <b>{j.status}</b>
-                <small>{new Date(j.created_at).toLocaleString("id-ID")}</small>
-                {j.error && <p>{j.error}</p>}
-              </div>
-            </div>
-          ))}
-          {!data?.jobs?.length && <p>Belum diterbitkan</p>}
-          <label>
-            Custom domain
-            <input
-              placeholder="app.domainanda.id"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
-          </label>
-          <div className="service-actions">
-            {btn(
-              "Simpan domain",
-              async () => {
-                const d = await request("domain", { domain: value });
-                setNotice(
-                  `Tambahkan ${d.dns.type} → ${d.dns.target}. ${d.notice}`,
-                );
-              },
-              owner && Boolean(data?.site),
-            )}
-            {btn(
-              "Periksa SSL",
-              async () => {
-                const d = await request("domain/verify", {});
-                setNotice("Status: " + d.status);
-              },
-              owner && Boolean(data?.site?.custom_domain),
-            )}
-          </div>
-          {data?.deployments
-            ?.filter((d: any) => d.status === "ready")
-            .map((d: any) => (
-              <div className="service-row" key={d.id}>
-                <div>
-                  Revisi {d.revision}
-                  <small>
-                    {new Date(d.created_at).toLocaleString("id-ID")}
-                  </small>
-                </div>
-                <button
-                  disabled={busy || !owner}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        "Pulihkan deployment ini sebagai versi publik aktif?",
-                      )
-                    )
-                      void run(() => request("rollback/" + d.id, {}));
-                  }}
-                >
-                  Rollback
-                </button>
-              </div>
-            ))}
-        </>
-      )}
-      {kind === "analytics" && (
-        <>
-          <p>
-            {data?.notice ||
-              "Data dikumpulkan hanya dari aplikasi yang sudah dipublikasikan, tanpa cookie atau IP mentah."}
-          </p>
-          <div className="service-grid">
-            <div className="service-card">
-              <strong className="metric">{data?.pageviews ?? "—"}</strong>
-              <p>Pageview · 30 hari</p>
-            </div>
-            <div className="service-card">
-              <strong className="metric">{data?.dailyDevices ?? "—"}</strong>
-              <p>Estimasi perangkat-harian</p>
-            </div>
-          </div>
-          {data?.sampled && (
-            <p>Ringkasan dibatasi pada 10.000 event terbaru.</p>
-          )}
-          {["pages", "referrers", "devices"].map((k, i) => (
-            <div key={k}>
-              <h3>{["Halaman", "Sumber kunjungan", "Perangkat"][i]}</h3>
-              {data?.[k]?.length ? (
-                data[k].map((r: any) => (
-                  <div className="service-row" key={r.label}>
-                    <span>{r.label}</span>
-                    <b>{r.count}</b>
-                  </div>
-                ))
-              ) : (
-                <p>Belum ada kunjungan.</p>
-              )}
-            </div>
-          ))}
         </>
       )}
       {kind === "packages" && (
@@ -519,6 +364,8 @@ export default function ServicePanel({
             async () => {
               await request("audit", {});
             },
+            // `capabilities.audit` needs a database, an E2B key AND an E2B
+            // template with Chromium + Lighthouse, which is what the route uses.
             editor && webRuntime && status?.capabilities?.audit,
           )}
           {data?.reports?.map((r: any) => (
@@ -839,9 +686,9 @@ export default function ServicePanel({
                     auth: "Autentikasi",
                     cloud: "Database cloud",
                     ai: "Provider AI",
+                    search: "Riset & pencarian",
                     whatsapp: "OTP WhatsApp",
                     sandbox: "Sandbox",
-                    publish: "Publish",
                     payments: "Pembayaran",
                     email: "Email undangan",
                     secrets: "Enkripsi secrets",
@@ -867,7 +714,7 @@ export default function ServicePanel({
       {kind === "credits" && (
         <>
           <p>
-            Kredit AI, sandbox, dan publish dihitung server-side. Lihat saldo,
+            Kredit AI, sandbox, dan audit dihitung server-side. Lihat saldo,
             transaksi, dan referral di halaman akun.
           </p>
           <Link className="button button-dark" to="/account">

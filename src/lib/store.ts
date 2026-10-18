@@ -37,6 +37,11 @@ export interface Store {
     template?: string,
     kind?: ProjectKind,
   ) => string;
+  /**
+   * Puts a project from a backup file into the workspace, under a fresh id.
+   * Restores never overwrite: a damaged backup cannot take existing work with it.
+   */
+  importProject: (data: Project, name: string) => string;
   updateProject: (id: string, data: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   duplicateProject: (id: string) => string;
@@ -163,6 +168,23 @@ export const useStore = create<Store>()(
               createdAt: Date.now(),
               updatedAt: Date.now(),
               comments: [],
+            },
+            ...s.projects,
+          ],
+          sync: pending(s, id),
+        }));
+        return id;
+      },
+      importProject: (data, name) => {
+        const id = uid();
+        set((s) => ({
+          projects: [
+            {
+              ...data,
+              id,
+              name,
+              versions: data.versions?.length ? data.versions : [],
+              updatedAt: Date.now(),
             },
             ...s.projects,
           ],

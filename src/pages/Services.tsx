@@ -4,6 +4,16 @@ import { Logo } from "../components/ui";
 import { api } from "../services/api";
 import { useStore } from "../lib/store";
 import { requestCloudSync } from "../lib/cloud/sync";
+import {
+  capLine,
+  count,
+  creditsNote,
+  dailyLine,
+  lastsLabel,
+  serverDailyLine,
+  usageProfile,
+  type ServerCredits,
+} from "../lib/dashboard/plans";
 const ReplayPlayer = lazy(() => import("../components/services/ReplayPlayer"));
 import "../components/services/services.css";
 const money = (n: number) =>
@@ -119,8 +129,13 @@ export default function Services({
           <>
             <div className="service-grid">
               <div className="service-card">
-                <strong className="metric">{data.balance}</strong>
+                <strong className="metric">{count(data.balance)}</strong>
                 <p>Kredit tersedia</p>
+                <small>
+                  {lastsLabel(data.balance, usageProfile("normal"))} pada
+                  pemakaian normal · jatah harian direset, kredit paket &amp;
+                  top-up ada masa berlaku
+                </small>
               </div>
               <div className="service-card">
                 <strong className="metric">{data.plan.plan}</strong>
@@ -132,21 +147,43 @@ export default function Services({
                       )
                     : "Paket gratis"}
                 </p>
+                <small
+                  className="credit-daily"
+                  data-credits={data.credits?.source || ""}
+                >
+                  {data.credits
+                    ? data.credits.applied
+                      ? serverDailyLine(data.credits)
+                      : creditsNote(data.credits)
+                    : dailyLine(data.plan.plan)}
+                </small>
+                {!!capLine(data.credits as ServerCredits | null) && (
+                  <small className="credit-cap">
+                    {capLine(data.credits as ServerCredits | null)}
+                  </small>
+                )}
               </div>
             </div>
             <h2>Paket & top-up</h2>
+            <p className="service-actions">
+              <Link to="/upgrade">
+                Buka halaman paket (perbandingan & rincian kredit)
+              </Link>
+            </p>
             <p>
               Paket prabayar 30 hari, tanpa penagihan otomatis. Pembelian paket
               tambahan dijadwalkan setelah masa aktif sebelumnya; kredit
               ditambahkan langsung. Metode pembayaran yang tersedia ditampilkan
-              oleh provider pada checkout. Harga dalam IDR.
+              oleh provider pada checkout. Harga dalam IDR.{" "}
+              <b>Semua pembelian bersifat final dan tidak dapat direfund</b>,
+              termasuk paket, top-up, dan template.
             </p>
             <div className="service-grid">
               {Object.entries(data.products).map(([sku, p]: [string, any]) => (
                 <div className="service-card" key={sku}>
                   <h3>{p.label}</h3>
                   <p>
-                    {money(p.amount)} · {p.credits} kredit
+                    {money(p.amount)} · {count(p.credits)} kredit
                   </p>
                   <button
                     disabled={busy || !data.paymentsEnabled}
@@ -167,8 +204,8 @@ export default function Services({
             </p>
             <p>
               50 kredit untuk masing-masing akun setelah pembelian paket/top-up
-              minimal Rp49.000 terverifikasi. Bonus dibatalkan bila pembayaran
-              dikembalikan.
+              minimal Rp49.000 terverifikasi. Bonus dibatalkan bila penyedia
+              membatalkan atau menarik pembayaran.
             </p>
             <form
               onSubmit={(e) => {
@@ -273,7 +310,9 @@ export default function Services({
             </div>
             <p>
               Template komunitas dengan kode yang dapat Anda lanjutkan. Tinjau
-              kode dan lisensi sebelum digunakan dalam produksi.
+              kode dan lisensi sebelum digunakan dalam produksi. Pembelian
+              template bersifat final; tidak ada refund. Laporan masalah di
+              halaman profil hanya mencatat keluhan dan balasan penjual.
             </p>
             {!data.templates.length && (
               <p>

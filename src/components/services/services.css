@@ -129,6 +129,13 @@
   font-size: 15px;
   margin: 0 0 7px;
 }
+.service-card small {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #626b59;
+}
 .service-card strong.metric {
   font-size: 30px;
   font-weight: 600;
@@ -172,14 +179,6 @@
   height: 330px;
   background: white;
 }
-.presence-status {
-  font-size: 10px;
-  color: var(--ide-success, #8aa68c);
-  max-width: 170px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .service-bar {
   height: 5px;
   background: var(--ide-surface, #e5e9ee);
@@ -203,8 +202,338 @@
 .service-page a {
   color: inherit;
 }
+/* Links inherit the page colour inside the shell, so a link styled as a solid
+   button has to keep its own text colour or it renders nearly invisible. */
+.service-page a.button-dark {
+  color: #fff;
+}
+.service-page a.button-danger {
+  color: #fff;
+}
 .service-page .eyebrow-label {
-  color: var(--ide-subtle, #6e7680);
+  /* #636c78 keeps the label readable at 11px: 5.05:1 on the page background,
+     which axe checks on the service pages (same idea as the auth override). */
+  color: var(--ide-subtle, #636c78);
   font-size: 11px;
   letter-spacing: 1.5px;
+}
+.github-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.github-panel > p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--ide-muted, #5b6b7c);
+}
+.github-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--ide-text, #26313d);
+}
+.github-field input {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--ide-border, #d5dce3);
+  border-radius: 5px;
+  background: var(--ide-input-bg, #fff);
+  color: inherit;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+.github-field small {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 9px;
+  line-height: 1.55;
+  color: var(--ide-muted, #67788a);
+}
+.github-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 8px;
+}
+.github-error {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--ide-danger, #b04a4a);
+}
+.github-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--ide-success, #5b856b);
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ide-text, #26313d);
+}
+.github-result a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ide-accent, #477296);
+  font-weight: 600;
+}
+.payout-section {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid var(--ide-border, #dce0e5);
+  border-radius: 10px;
+  background: var(--ide-surface, #fff);
+}
+.payout-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.payout-heading h2 {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.payout-heading p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ide-muted, #64748b);
+  max-width: 620px;
+}
+.payout-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.payout-metrics > div {
+  padding: 10px 12px;
+  border: 1px solid var(--ide-border, #e3e7eb);
+  border-radius: 7px;
+  background: var(--ide-bg, #f8fafc);
+}
+.payout-metrics span {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ide-muted, #64748b);
+}
+.payout-metrics strong {
+  display: block;
+  margin: 3px 0 2px;
+  font-size: 15px;
+}
+.payout-metrics small {
+  font-size: 9px;
+  color: var(--ide-muted, #7b8794);
+}
+.payout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.payout-card {
+  padding: 14px;
+  border: 1px solid var(--ide-border, #e3e7eb);
+  border-radius: 8px;
+}
+.payout-card h3,
+.payout-history-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+.payout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.payout-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--ide-muted, #52606d);
+}
+.payout-form input,
+.payout-form select {
+  padding: 8px 9px;
+  border: 1px solid var(--ide-border, #d5dce3);
+  border-radius: 5px;
+  background: var(--ide-input-bg, #fff);
+  color: inherit;
+  font-size: 11px;
+}
+.payout-form small,
+.payout-muted,
+.payout-loading {
+  font-size: 10px;
+  line-height: 1.55;
+  color: var(--ide-muted, #7b8794);
+}
+.payout-error {
+  font-size: 11px;
+  color: var(--ide-danger, #b04a4a);
+}
+.payout-notice {
+  font-size: 11px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ide-success, #5b856b);
+  color: var(--ide-text, #26313d);
+}
+.payout-table-wrap {
+  overflow-x: auto;
+}
+.payout-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+.payout-table th,
+.payout-table td {
+  padding: 7px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--ide-border, #edf0f3);
+}
+.payout-table th {
+  color: var(--ide-muted, #64748b);
+  font-weight: 600;
+}
+.payout-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 9px;
+  background: var(--ide-bg, #eef2f6);
+}
+.payout-badge.paid {
+  background: #e3f3e8;
+  color: #2f6b44;
+}
+.payout-badge.rejected {
+  background: #fbe9e9;
+  color: #9b3c3c;
+}
+.payout-badge.requested,
+.payout-badge.approved {
+  background: #eaf1fb;
+  color: #3c5d8a;
+}
+@media (max-width: 760px) {
+  .payout-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .payout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-grid > .payout-section {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+.dispute-section {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid var(--ide-border, #dce0e5);
+  border-radius: 10px;
+  background: var(--ide-surface, #fff);
+}
+.profile-grid > .dispute-section {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+.payout-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.dispute-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dispute-card {
+  padding: 12px 14px;
+  border: 1px solid var(--ide-border, #e3e7eb);
+  border-radius: 8px;
+  background: var(--ide-bg, #fbfcfd);
+}
+.dispute-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.dispute-card small {
+  display: block;
+  font-size: 9px;
+  color: var(--ide-muted, #7b8794);
+  margin-bottom: 6px;
+}
+.dispute-card p {
+  margin: 6px 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.dispute-reply {
+  padding-left: 8px;
+  border-left: 2px solid var(--ide-border, #d5dce3);
+  color: var(--ide-text, #33404d);
+}
+.dispute-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.dispute-reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.dispute-reply-form textarea {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--ide-border, #d5dce3);
+  border-radius: 5px;
+  background: var(--ide-input-bg, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+}
+.dispute-form {
+  max-width: 620px;
+}
+.dispute-form textarea {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--ide-border, #d5dce3);
+  border-radius: 5px;
+  background: var(--ide-input-bg, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+}
+.payout-badge.open,
+.payout-badge.seller_replied {
+  background: #fdf3e2;
+  color: #8a5a1c;
+}
+.payout-badge.refund_approved {
+  background: #e3f3e8;
+  color: #2f6b44;
+}
+.payout-badge.withdrawn {
+  background: var(--ide-bg, #eef2f6);
+  color: var(--ide-muted, #64748b);
 }

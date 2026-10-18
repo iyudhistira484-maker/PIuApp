@@ -15,6 +15,7 @@ const features = [
   "administration",
   "studio",
   "ai",
+  "search",
   "sandbox",
   "publish",
   "payments",

@@ -18,7 +18,7 @@
 1. Buat project staging Supabase. Terapkan **secara berurutan dan sekali saja** melalui migration runner/SQL Editor:
    - `supabase/001_schema.sql`
    - `supabase/002_workspace_sync.sql`
-   - `supabase/003_services.sql` (layanan backend, ledger, invites, publish, marketplace)
+   - `supabase/003_services.sql` (layanan backend, ledger, invites, marketplace; tabel publish lama dibiarkan inert)
    - `supabase/004_project_data.sql` (dataset cloud privat; lihat PROJECT_DATA.md)
 2. Migration 002 menambahkan `project_workspaces` dengan RLS dan RPC:
    - `piwu_list_workspaces()`
@@ -44,7 +44,7 @@
 - Data yang sebelumnya tersimpan oleh versi awal dianggap demo lokal karena kepemilikannya belum terverifikasi. Migrasi tidak menebak pemilik atau mengunggah otomatis.
 - Kebijakan delete yang gagal mengembalikan project ke daftar untuk ditinjau, bukan menyembunyikan kegagalan. Jika akses dicabut, cache yang sebelumnya bersih dihapus dari daftar aktif setelah pull berhasil; edit belum tersinkron menjadi konflik agar bisa dicadangkan.
 - Backup JSON saat ini dapat diunduh, belum ada restore file JSON melalui UI. Kode executable dapat diekspor sebagai ZIP.
-- OTP WhatsApp, undangan/email, presence Realtime, credit ledger, pembayaran, dan publish sudah memiliki implementasi di migration 003/service API. Aktivasi dan uji live mengikuti SERVICES_SETUP.md.
+- OTP WhatsApp, undangan/email, presence Realtime, credit ledger, dan pembayaran sudah memiliki implementasi di migration 003/service API. Aktivasi dan uji live mengikuti SERVICES_SETUP.md.
 
 ## Pengujian
 

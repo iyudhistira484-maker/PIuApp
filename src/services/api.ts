@@ -1,3 +1,4 @@
+import { apiTimeoutMs } from "../lib/api-budget";
 import { supabase } from "../lib/supabase";
 import { useStore } from "../lib/store";
 export class APIError extends Error {
@@ -37,13 +38,8 @@ export async function api<T = any>(
     throw new Error(
       "Masuk dengan akun Supabase untuk menggunakan layanan ini. Tidak ada permintaan yang dikirim tanpa sesi terverifikasi.",
     );
-  // Long paid operations have explicit larger budgets; ordinary API calls cannot hang the UI forever.
-  const timeoutMs = /\/audit$/.test(path)
-    ? 480000
-    : /\/(?:sandbox\/(?:command|preview|files)|packages)$/.test(path)
-      ? 180000
-      : 30000;
-  const deadline = AbortSignal.timeout(timeoutMs);
+  // Budget per operation, in one testable place: see src/lib/api-budget.ts.
+  const deadline = AbortSignal.timeout(apiTimeoutMs(path));
   let response: Response;
   try {
     response = await fetch("/api" + path, {
@@ -95,7 +91,6 @@ export function projectApi<T = any>(
   if (
     body !== undefined &&
     [
-      "publish",
       "template",
       "audit",
       "sandbox/command",

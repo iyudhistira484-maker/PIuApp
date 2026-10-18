@@ -1,4 +1,13 @@
 import type { Page } from "@playwright/test";
+// A deliberately multi-vendor API key: several providers plus one unknown id.
+export const modelCatalogue = [
+  "claude-sonnet-4-20250514",
+  "deepseek-chat",
+  "deepseek-reasoner",
+  "glm-4-flash",
+  "glm-4.6",
+  "jamba-1.5-large",
+];
 // Network fixtures ONLY for browser regression tests, never imported by src/.
 // Exercises the real Supabase login/RPC client and authenticated AI API path;
 // it does not establish that any external provider is live.
@@ -77,7 +86,6 @@ export async function realAccountFixture(page: Page, ai = true) {
           cloud: true,
           ai,
           sandbox: false,
-          publish: false,
           payments: false,
         },
         verification: "configuration-only",
@@ -95,7 +103,6 @@ export async function realAccountFixture(page: Page, ai = true) {
         database: "reachable",
         ai: ai ? "configured_unverified" : "not_configured",
         sandbox: "not_configured",
-        publish: "not_configured",
         payments: "not_configured",
         whatsapp: "not_configured",
         secrets: "not_configured",
@@ -105,6 +112,49 @@ export async function realAccountFixture(page: Page, ai = true) {
   await page.route("**/api/announcements**", (r) =>
     r.fulfill({ json: { broadcasts: [] } }),
   );
+  // The bell is part of every signed-in header. Tests that exercise it
+  // register a narrower route afterwards, which Playwright matches first.
+  await page.route("**/api/notifications**", (r) =>
+    r.fulfill({ json: { applied: true, items: [], unread: 0 } }),
+  );
+  // Model catalogue as a multi-vendor API key would return it. Grouping is the
+  // server's job; the picker must list every id here.
+  await page.route("**/api/ai/models**", (r) => {
+    if (!ai)
+      return r.fulfill({
+        status: 503,
+        json: { error: "AI belum dikonfigurasi.", models: [] },
+      });
+    return r.fulfill({
+      json: {
+        source: "provider",
+        count: modelCatalogue.length,
+        models: modelCatalogue,
+        groups: [
+          { label: "Anthropic Claude", models: ["claude-sonnet-4-20250514"] },
+          {
+            label: "DeepSeek",
+            models: ["deepseek-chat", "deepseek-reasoner"],
+          },
+          { label: "Z.ai GLM", models: ["glm-4-flash", "glm-4.6"] },
+          { label: "Model lainnya", models: ["jamba-1.5-large"] },
+        ],
+        tiers: { Kuat: "claude-sonnet-4-20250514" },
+        // Same shape the server sends: one price per model plus the tier
+        // prices, so the picker can print what it will be charged.
+        costs: modelCatalogue.map((model) =>
+          model === "claude-sonnet-4-20250514"
+            ? { model, tier: "Kuat", cost: 8 }
+            : { model, tier: "Seimbang", cost: 3 },
+        ),
+        tierCosts: { Cepat: 1, Seimbang: 3, Kuat: 8 },
+        askCost: 1,
+        planCost: 2,
+        defaultModel: "claude-sonnet-4-20250514",
+        defaultSource: "LLM_MODEL",
+      },
+    });
+  });
   await page.route("**/api/projects/**", async (r) => {
     const path = new URL(r.request().url()).pathname;
     if (path.endsWith("/ai")) {
@@ -133,9 +183,7 @@ export async function realAccountFixture(page: Page, ai = true) {
         body: `data: ${JSON.stringify({ type: "result", result })}\n\n`,
       });
     }
-    // Offline service contract fixtures; no shell, hosting, or payments called.
-    if (path.endsWith("/hosting"))
-      return r.fulfill({ json: { hosting: null, jobs: [] } });
+    // Offline service contract fixtures; no shell or payments called.
     if (path.endsWith("/invites"))
       return r.fulfill({ json: { members: [], invites: [] } });
     if (path.endsWith("/recordings"))

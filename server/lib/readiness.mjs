@@ -1,6 +1,6 @@
 import { capabilities } from "./core.mjs";
 
-// Read-only, bounded checks. No inference, shell, deployment, billing, or user
+// Read-only, bounded checks. No inference, shell, billing, or user
 // records are returned. Configuration never means that a provider is live.
 export function createReadinessReader(
   ctx,
@@ -22,8 +22,8 @@ export function createReadinessReader(
       administration: configured("cloud"),
       studio: configured("cloud"),
       ai: configured("ai"),
+      search: configured("search"),
       sandbox: configured("sandbox"),
-      publish: configured("publish"),
       payments: configured("payments"),
       whatsapp: configured("whatsapp"),
       secrets: configured("secrets"),

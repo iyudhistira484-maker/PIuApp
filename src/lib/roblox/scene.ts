@@ -5,6 +5,8 @@ const vec = z.tuple([
   z.number().finite().min(-10000).max(10000),
   z.number().finite().min(-10000).max(10000),
 ]);
+/** Faces that share a colour — usually sampled from a photo. */
+export const MESH_GROUPS_MAX = 24;
 const mesh = z
   .object({
     vertices: z.array(vec).min(3).max(512),
@@ -17,6 +19,20 @@ const mesh = z
         ]),
       )
       .max(1024),
+    groups: z
+      .array(
+        z.object({
+          color: z.string().regex(/^#[0-9a-f]{6}$/i),
+          faces: z.array(z.number().int().nonnegative()).min(1),
+          // The rectangle of the photo this group's faces were sampled from,
+          // kept so the colours can become a real texture at export time.
+          region: z
+            .tuple([z.number(), z.number(), z.number(), z.number()])
+            .optional(),
+        }),
+      )
+      .max(MESH_GROUPS_MAX)
+      .optional(),
   })
   .refine(
     (m) =>
@@ -24,7 +40,18 @@ const mesh = z
         (f) => new Set(f).size === 3 && f.every((i) => i < m.vertices.length),
       ),
     "Indeks face tidak valid",
-  );
+  )
+  .refine((m) => {
+    // A face carries one colour: a face listed twice, or listed outside the
+    // mesh, is a broken scene and must never render.
+    const seen = new Set<number>();
+    for (const group of m.groups || [])
+      for (const index of group.faces) {
+        if (seen.has(index) || index >= m.faces.length) return false;
+        seen.add(index);
+      }
+    return true;
+  }, "Grup warna mesh tidak valid (face ganda atau di luar jangkauan)");
 export const objectSchema = z
   .object({
     id: z.string().min(1).max(100),
@@ -69,6 +96,8 @@ export const sceneSchema = z
     }
   });
 export type SceneObject = z.infer<typeof objectSchema>;
+/** The custom geometry one object may carry. */
+export type SceneMesh = NonNullable<SceneObject["mesh"]>;
 export type RobloxScene = z.infer<typeof sceneSchema>;
 export function newObject(kind: SceneObject["kind"]): SceneObject {
   return {
@@ -123,17 +152,75 @@ export function deleteObject(scene: RobloxScene, id: string): RobloxScene {
   }
   return { ...scene, objects: scene.objects.filter((o) => !removed.has(o.id)) };
 }
+/**
+ * Expands a grouped mesh into non-indexed triangles with a colour per vertex.
+ * Three.js cannot give two faces of one mesh different colours while they share
+ * a vertex, so the geometry is expanded — that is what the renderer and the
+ * export both need, and both read it from here.
+ */
+export function meshPhotoColors(
+  mesh: NonNullable<SceneObject["mesh"]>,
+  fallback: string,
+) {
+  const colorOf = new Map<number, string>();
+  for (const group of mesh.groups || [])
+    for (const index of group.faces) colorOf.set(index, group.color);
+  const rgb = (hex: string) => [
+    parseInt(hex.slice(1, 3), 16) / 255,
+    parseInt(hex.slice(3, 5), 16) / 255,
+    parseInt(hex.slice(5, 7), 16) / 255,
+  ];
+  const position: number[] = [];
+  const color: number[] = [];
+  mesh.faces.forEach((face, index) => {
+    const [r, g, b] = rgb(colorOf.get(index) || fallback);
+    for (const vertex of face) {
+      position.push(...mesh.vertices[vertex]);
+      color.push(r, g, b);
+    }
+  });
+  return { position, color };
+}
+
 export function meshOBJ(object: SceneObject) {
   if (!object.mesh) throw new Error("Pilih mesh kustom.");
   objectSchema.parse(object);
-  return (
-    [
-      "# PiwuApp mesh; local coordinates, import scale separately",
-      "o PiwuMesh",
-      ...object.mesh.vertices.map((v) => "v " + v.join(" ")),
-      ...object.mesh.faces.map((f) => "f " + f.map((i) => i + 1).join(" ")),
-    ].join("\n") + "\n"
-  );
+  const groups = object.mesh.groups || [];
+  if (!groups.length)
+    return (
+      [
+        "# PiwuApp mesh; local coordinates, import scale separately",
+        "o PiwuMesh",
+        ...object.mesh.vertices.map((v) => "v " + v.join(" ")),
+        ...object.mesh.faces.map((f) => "f " + f.map((i) => i + 1).join(" ")),
+      ].join("\n") + "\n"
+    );
+  // Photo-coloured mesh: every face keeps its own colour, written as vertex
+  // colours in the widely-read `v x y z r g b` extension. Roblox itself ignores
+  // these, so the export says so instead of pretending.
+  const { color: perFace } = meshPhotoColors(object.mesh, object.color);
+  const lines = [
+    "# PiwuApp mesh dengan warna per sisi dari foto (vertex colour extension)",
+    "# Roblox mengabaikan warna di file OBJ ini; pakai Ekspor GLB di panel Properti untuk tekstur.",
+    "o PiwuMeshColored",
+  ];
+  let emitted = 0;
+  object.mesh.faces.forEach((face, index) => {
+    for (const [slot, vertex] of face.entries()) {
+      const v = object.mesh!.vertices[vertex];
+      const at = (index * 3 + slot) * 3;
+      const rgb = [perFace[at], perFace[at + 1], perFace[at + 2]];
+      lines.push(
+        `v ${v[0]} ${v[1]} ${v[2]} ${rgb
+          .map((value) => Number(value.toFixed(4)))
+          .join(" ")}`,
+      );
+    }
+    // Face indices count vertices, not lines: the header above is not a vertex.
+    lines.push(`f ${emitted + 1} ${emitted + 2} ${emitted + 3}`);
+    emitted += 3;
+  });
+  return lines.join("\n") + "\n";
 }
 export function parseOBJ(text: string): SceneObject {
   if (text.length > 1000000) throw new Error("OBJ maksimal 1 MB.");

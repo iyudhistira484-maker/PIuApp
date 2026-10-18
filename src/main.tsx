@@ -12,6 +12,8 @@ import "@fontsource/inter/latin-500.css";
 import "@fontsource/inter/latin-600.css";
 import "@fontsource/inter/latin-700.css";
 import "@fontsource/inter/latin-800.css";
+import "@fontsource/jetbrains-mono/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-500.css";
 import "./styles.css";
 import { PlatformProvider } from "./components/admin/Platform";
 import Landing from "./pages/Landing";
@@ -23,6 +25,8 @@ import WorkspaceSession from "./components/storage/WorkspaceSession";
 const PasswordRecovery = lazy(() => import("./pages/PasswordRecovery"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Services = lazy(() => import("./pages/Services"));
+const Upgrade = lazy(() => import("./pages/Upgrade"));
+const Profile = lazy(() => import("./pages/Profile"));
 const Workspace = lazy(() => import("./pages/Workspace"));
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -129,6 +133,17 @@ function App() {
               ),
             )}
             <Route path="/login" element={<Auth />} />
+            {/* Pricing and profile stay reachable without the workspace gate:
+                the pages themselves explain what a session would unlock. */}
+            <Route path="/upgrade" element={<Upgrade />} />
+            <Route
+              path="/profile"
+              element={
+                <WorkspaceGate>
+                  <Profile />
+                </WorkspaceGate>
+              }
+            />
             <Route path="/forgot-password" element={<PasswordRecovery />} />
             <Route
               path="/reset-password"

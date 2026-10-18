@@ -1,6 +1,6 @@
-import { Worker } from "node:worker_threads";
 import { HttpError, assertNoSecrets } from "./core.mjs";
 import { fetchReference } from "./references.mjs";
+import { pdfText } from "./pdf-text.mjs";
 export function inspectAttachment(a) {
   if (
     !a ||
@@ -32,38 +32,6 @@ export function inspectAttachment(a) {
     );
   return bytes;
 }
-function pdfText(bytes) {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./pdf-worker.mjs", import.meta.url), {
-      workerData: bytes,
-      execArgv: [],
-      env: {},
-      resourceLimits: { maxOldGenerationSizeMb: 192 },
-    });
-    const timeout = setTimeout(() => {
-      worker.terminate();
-      reject(new HttpError(408, "Pembacaan PDF melewati batas waktu."));
-    }, 15000);
-    let finished = false;
-    const done = (error, text) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timeout);
-      worker.terminate();
-      error ? reject(error) : resolve(text);
-    };
-    worker.once("message", (r) =>
-      done(r.error ? new HttpError(422, r.error) : null, r.text),
-    );
-    worker.once("error", () =>
-      done(new HttpError(422, "PDF tidak dapat diproses.")),
-    );
-    worker.once("exit", (code) => {
-      if (code !== 0 && !finished)
-        done(new HttpError(422, "Proses PDF dihentikan."));
-    });
-  });
-}
 export async function attachmentParts(attachments = [], references = []) {
   if (
     !Array.isArray(attachments) ||
@@ -73,6 +41,19 @@ export async function attachmentParts(attachments = [], references = []) {
   )
     throw new HttpError(400, "Maksimal 3 lampiran dan 2 URL per pesan.");
   const parts = [];
+  // Photos are numbered in the order they were attached, and that number is what
+  // a `scene.build` op must cite. A photo that is not listed here cannot be
+  // referenced, so "built from photo 2" is never accepted out of nowhere.
+  const photos = attachments.filter((a) =>
+    String(a?.mime || "").startsWith("image/"),
+  );
+  if (photos.length)
+    parts.push({
+      type: "text",
+      text: `LAMPIRAN FOTO (${photos.length}): ${photos
+        .map((a, i) => `${i + 1} = ${String(a.name).slice(0, 80)} (${a.mime})`)
+        .join(", ")}. Rujuk foto ini hanya dengan nomor tersebut.`,
+    });
   for (const a of attachments) {
     const bytes = inspectAttachment(a);
     if (a.mime.startsWith("image/"))
