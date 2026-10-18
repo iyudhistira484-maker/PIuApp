@@ -5,6 +5,8 @@ import HeroVideo from "../components/landing/HeroVideo";
 import "../components/landing/landing-responsive.css";
 import "../components/landing/landing-motion.css";
 import "../components/landing/landing-pricing.css";
+import "../components/landing/landing-workspace.css";
+import WorkspaceLoop from "../components/landing/WorkspaceLoop";
 import useLandingMotion, {
   revealDelay,
 } from "../components/landing/useLandingMotion";
@@ -492,61 +494,7 @@ export default function Landing() {
               </p>
             </div>
             <div className="feature-layout" data-reveal>
-              <div className="workspace-illustration" aria-hidden="true">
-                <div className="illustration-bar">
-                  <div className="window-dots">
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                  <span>Project luar biasa Anda</span>
-                  <span>↗</span>
-                </div>
-                <div className="illustration-body">
-                  <aside>
-                    <Code2 size={16} />
-                    <Layers size={16} />
-                    <Globe2 size={16} />
-                  </aside>
-                  <div className="illustration-code">
-                    <div>
-                      <span className="blue-text">&lt;IdeAnda</span>
-                    </div>
-                    <div>
-                      &nbsp; inspirasi=
-                      <span className="green-text">"tanpa batas"</span>
-                    </div>
-                    <div>
-                      &nbsp; dibuat=
-                      <span className="green-text">"bersama PiwuApp"</span>
-                    </div>
-                    <div>
-                      <span className="blue-text">/&gt;</span>
-                    </div>
-                    <div className="illustration-preview">
-                      <span>Halo, dunia.</span>
-                      <div />
-                      <small>INI BARU PERMULAAN ↗</small>
-                    </div>
-                  </div>
-                  <div className="illustration-chat">
-                    <span className="ai-badge">✳</span>
-                    <p>
-                      Mari wujudkan
-                      <br />
-                      ide Anda.
-                    </p>
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line short" />
-                    <div className="illustration-success">
-                      <Check size={12} /> Preview siap
-                    </div>
-                    <div className="fake-input">
-                      Apa selanjutnya? <ArrowRight size={12} />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <WorkspaceLoop />
               <div className="feature-list" data-reveal data-stagger>
                 {[
                   {

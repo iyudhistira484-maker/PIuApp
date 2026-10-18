@@ -1,0 +1,385 @@
+/* ============================================================
+   Miniatur IDE (section features) — loop "AI sedang bekerja":
+   prompt diketik → asisten membalas → kode tertulis per baris →
+   preview muncul → badge "Preview siap".
+   Hanya memengaruhi .workspace-illustration; selector memakai
+   .landing agar menang dari styles.css apa pun urutan cache-nya.
+   ============================================================ */
+
+.landing .workspace-illustration {
+  background: #171a18;
+}
+
+/* --- Bar jendela ------------------------------------------------ */
+.landing .illustration-bar {
+  height: 34px;
+  padding: 0 14px;
+}
+.landing .illustration-bar > span {
+  font-size: 9px;
+  color: #9fb2a4;
+}
+.landing .ws-sync {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #7f9a83;
+}
+.landing .ws-sync i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #6f9a72;
+}
+
+/* --- Editor ------------------------------------------------------ */
+.landing .illustration-body {
+  min-height: 313px;
+  transition: opacity 0.5s ease;
+}
+.landing .workspace-illustration[data-stage="6"] .illustration-body {
+  opacity: 0;
+}
+.landing .illustration-code {
+  padding: 0 16px 18px;
+}
+.landing .ws-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  margin: 0 -16px 8px;
+  padding: 0 14px;
+  background: #1e231f;
+  border-bottom: 1px solid #2c332c;
+  font-size: 9px;
+  color: #9db0a0;
+}
+.landing .ws-tab i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5f8a63;
+  transition: background 0.3s ease;
+}
+.landing .workspace-illustration[data-stage="3"] .ws-tab i {
+  background: #c9a24a;
+}
+.landing .ws-editor {
+  font-family: "SFMono-Regular", "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.landing .ws-line {
+  display: flex;
+  gap: 12px;
+  min-height: 1.75em;
+}
+.landing .ws-gutter {
+  width: 10px;
+  flex-shrink: 0;
+  text-align: right;
+  transform: translateY(1px);
+  font-size: 10px;
+  color: #8a9784;
+  user-select: none;
+}
+.landing .ws-text {
+  white-space: pre;
+}
+.landing .ws-tag {
+  color: #8fb4dd;
+}
+.landing .ws-attr {
+  color: #a9c0b4;
+}
+.landing .ws-str {
+  color: #b8d39b;
+}
+.landing .ws-punc {
+  color: #7e917f;
+}
+.landing .ws-caret {
+  display: inline-block;
+  width: 6px;
+  height: 13px;
+  margin-left: 1px;
+  vertical-align: -2px;
+  background: #cfe3c4;
+  font-style: normal;
+  animation: ws-blink 1s steps(1) infinite;
+}
+@keyframes ws-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* --- Preview ----------------------------------------------------- */
+.landing .illustration-preview {
+  height: 148px;
+  margin-top: 16px;
+}
+.landing .ws-skel {
+  position: absolute;
+  inset: 16px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border-radius: 3px;
+  background: linear-gradient(100deg, #e0e5d5 40%, #ecefe2 50%, #e0e5d5 60%);
+  background-size: 220% 100%;
+  animation: ws-shimmer 1.5s linear infinite;
+  transition: opacity 0.45s ease;
+}
+.landing .ws-skel i {
+  display: block;
+  height: 9px;
+  border-radius: 3px;
+  background: #c3cbb4;
+}
+.landing .ws-skel i:nth-child(1) {
+  width: 68%;
+}
+.landing .ws-skel i:nth-child(2) {
+  width: 44%;
+}
+.landing .ws-skel i:nth-child(3) {
+  height: 44px;
+  width: 58%;
+  margin-top: 10px;
+}
+@keyframes ws-shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+.landing .illustration-preview > span,
+.landing .illustration-preview > .ws-prev-sub,
+.landing .illustration-preview > small:last-child,
+.landing .illustration-preview > div {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+.landing .illustration-preview > div {
+  transform: translate(16px, 0) rotate(25deg);
+}
+.landing .illustration-preview > span {
+  font-size: 27px;
+}
+.landing .ws-prev-sub {
+  position: relative;
+  z-index: 2;
+  font-size: 11px;
+  letter-spacing: 0;
+  color: #55604a;
+}
+.landing .illustration-preview > small:last-child {
+  font-size: 6.5px;
+  letter-spacing: 1.2px;
+  color: #5a644f;
+}
+.landing .illustration-preview.ws-ready > span {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.05s;
+}
+.landing .illustration-preview.ws-ready > .ws-prev-sub {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.18s;
+}
+.landing .illustration-preview.ws-ready > div {
+  opacity: 1;
+  transform: rotate(25deg);
+  transition-delay: 0.1s;
+}
+.landing .illustration-preview.ws-ready > small:last-child {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.3s;
+}
+.landing .illustration-preview.ws-ready .ws-skel {
+  opacity: 0;
+}
+
+/* --- Panel asisten ----------------------------------------------- */
+.landing .illustration-chat {
+  width: 33%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 14px 48px;
+}
+.landing .ai-badge {
+  font-size: 0;
+  color: #cfe0c4;
+}
+.landing .workspace-illustration[data-stage="1"] .ai-badge,
+.landing .workspace-illustration[data-stage="2"] .ai-badge {
+  animation: ws-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ws-pulse {
+  50% {
+    opacity: 0.45;
+    transform: scale(0.92) rotate(8deg);
+  }
+}
+.landing .ws-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  margin-top: 10px;
+}
+.landing .ws-msg {
+  font-size: 10px;
+  line-height: 1.55;
+  padding: 7px 9px;
+  border-radius: 7px;
+  animation: ws-rise 0.4s ease both;
+}
+.landing .ws-user {
+  align-self: flex-end;
+  border: 1px solid #35473a;
+  border-bottom-right-radius: 2px;
+  background: #26332a;
+  color: #dce7da;
+}
+.landing .ws-ai {
+  align-self: flex-start;
+  max-width: 96%;
+  border: 1px solid #2c352d;
+  border-bottom-left-radius: 2px;
+  background: #1f2620;
+  color: #c3d2bf;
+}
+@keyframes ws-rise {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+.landing .ws-dots {
+  display: flex;
+  gap: 4px;
+  padding: 4px 2px;
+}
+.landing .ws-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7d927c;
+  animation: ws-think 1s ease-in-out infinite;
+}
+.landing .ws-dots i:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.landing .ws-dots i:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes ws-think {
+  0%,
+  100% {
+    transform: none;
+    opacity: 0.45;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+.landing .illustration-success {
+  margin-top: auto;
+  opacity: 0;
+  transform: translateY(6px) scale(0.94);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.landing .workspace-illustration[data-stage="5"] .illustration-success,
+.landing .workspace-illustration[data-stage="6"] .illustration-success {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- Input -------------------------------------------------------- */
+.landing .fake-input {
+  bottom: 12px;
+  right: 10px;
+  left: 10px;
+  padding: 8px 10px;
+  font-size: 10px;
+  color: #8fa093;
+  background: #1b211c;
+  border-color: #3c5142;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
+}
+.landing .fake-input svg {
+  color: #8fa093;
+}
+.landing .workspace-illustration[data-stage="0"] .fake-input {
+  color: #dce7da;
+  border-color: #5c7a62;
+  box-shadow: 0 0 0 2px rgba(60, 81, 66, 0.25);
+}
+.landing .workspace-illustration[data-stage="0"] .fake-input svg {
+  color: #b8d39b;
+}
+
+/* --- Mobile -------------------------------------------------------- */
+@media (max-width: 600px) {
+  .landing .ws-editor {
+    font-size: 10.5px;
+  }
+  .landing .ws-line {
+    gap: 8px;
+  }
+  .landing .illustration-code {
+    padding: 0 12px 14px;
+  }
+  .landing .ws-tab {
+    margin: 0 -12px 6px;
+    padding: 0 12px;
+  }
+  .landing .illustration-chat {
+    width: 36%;
+  }
+  .landing .ws-msg {
+    font-size: 9px;
+  }
+  .landing .illustration-preview {
+    height: 118px;
+  }
+  .landing .illustration-preview > span {
+    font-size: 21px;
+  }
+  .landing .ws-prev-sub {
+    font-size: 9.5px;
+  }
+  .landing .fake-input {
+    font-size: 9px;
+  }
+}
+
+/* --- Reduced motion: keadaan akhir statis, tanpa animasi --------- */
+@media (prefers-reduced-motion: reduce) {
+  .landing .ws-skel,
+  .landing .ws-caret,
+  .landing .ws-dots i,
+  .landing .ai-badge,
+  .landing .ws-msg {
+    animation: none !important;
+  }
+  .landing .ws-caret {
+    opacity: 0;
+  }
+  .landing .ws-msg {
+    opacity: 1;
+  }
+}
