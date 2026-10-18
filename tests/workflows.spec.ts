@@ -10,7 +10,7 @@ test("landing → prompt → authenticated API → workspace → AI review → r
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Bangun aplikasi",
+    "Bangun sesuatu",
   );
   await page
     .getByPlaceholder("Minta PiwuApp membuat aplikasi tentang…")

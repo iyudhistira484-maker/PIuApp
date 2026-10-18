@@ -1,8 +1,9 @@
 import ProjectKindPicker from "../components/projects/ProjectKindPicker";
 import type { ProjectKind } from "../lib/project-kinds";
 import LandingNav from "../components/landing/LandingNav";
+import HeroVideo from "../components/landing/HeroVideo";
+import "../components/landing/landing-responsive.css";
 import "../components/landing/landing-motion.css";
-import "../components/landing/landing.css";
 import useLandingMotion, {
   revealDelay,
 } from "../components/landing/useLandingMotion";
@@ -19,21 +20,31 @@ import {
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowRight,
   ArrowUpRight,
-  ArrowDown,
   Check,
   Plus,
   Minus,
   Code2,
-  ShieldCheck,
+  LayoutDashboard,
+  ShoppingBag,
+  Palette,
+  MousePointer2,
+  Sparkles,
   Globe2,
+  Download,
+  ShieldCheck,
+  Layers,
+  MessageSquare,
+  Zap,
+  Heart,
 } from "lucide-react";
 import { Logo, Modal } from "../components/ui";
 import PromptBox from "../components/PromptBox";
+import TemplatePreview from "../components/TemplatePreview";
 import { templates } from "../lib/templates";
 import { useStore } from "../lib/store";
 import { planBenefits } from "../lib/dashboard/plans";
-
 const faqs = [
   [
     "Apa itu PiwuApp?",
@@ -56,7 +67,6 @@ const faqs = [
     "Workspace memakai akun terautentikasi, penyimpanan cloud, editor kode, dan preview interaktif. AI, terminal, dan layanan eksternal memerlukan provider aktif. Kode keluar lewat Export ZIP; PiwuApp tidak menghosting hasil build. Layanan yang belum siap tidak digantikan oleh simulasi.",
   ],
 ];
-
 const thousands = (value: number) =>
   new Intl.NumberFormat("id-ID").format(value);
 
@@ -71,49 +81,9 @@ const creditNote = (plan: PlanRow) => {
   return `${thousands(plan.daily)} kredit/hari + ${lastsLabel(plan.credits, usageProfile("normal"))} pemakaian normal · ${expiryLabel(plan.expiryMonths)}`;
 };
 
-const steps = [
-  {
-    title: "Tulis kebutuhan",
-    text: "Jelaskan aplikasi yang Anda butuhkan dengan bahasa sehari-hari, atau mulai dari template. Pilih mode Bangun untuk langsung membuat, atau Rencana untuk meninjau langkahnya lebih dulu.",
-    detail: "Mode Bangun · Rencana · Tanya",
-  },
-  {
-    title: "Tinjau perubahan",
-    text: "Setiap file yang berubah ditampilkan sebelum diterapkan. Bandingkan isinya, terima yang sesuai, lalu lanjutkan dari workspace.",
-    detail: "Tinjauan file · riwayat versi",
-  },
-  {
-    title: "Ekspor kode",
-    text: "Preview berjalan di sandbox terisolasi. Setelah selesai, unduh seluruh kode sebagai ZIP dan jalankan di hosting pilihan Anda.",
-    detail: "Export ZIP · tanpa kunci",
-  },
-];
-
-const features = [
-  {
-    title: "Kode dan preview berdampingan",
-    text: "Edit file di editor, jalankan preview di panel sebelahnya, dan periksa hasilnya tanpa berpindah tab.",
-  },
-  {
-    title: "Riwayat versi",
-    text: "Perubahan besar membuat snapshot. Bandingkan versi, pulihkan bila perlu, dan lanjutkan dari titik yang benar.",
-  },
-  {
-    title: "Export ZIP",
-    text: "Seluruh kode project dapat diunduh kapan saja. Tidak ada kunci, tidak ada ketergantungan pada PiwuApp.",
-  },
-  {
-    title: "Akses per peran",
-    text: "Project cloud memakai peran Editor dan Viewer. Viewer tetap bisa membuka preview dan mengunduh kode.",
-  },
-];
-
-const heroFacts = [
-  ["Jenis project", "Web · Mobile · Roblox"],
-  ["Editor", "Kode, preview, canvas"],
-  ["Keluaran", "ZIP, kode milik Anda"],
-  ["Antarmuka", "Bahasa Indonesia"],
-];
+// The pricing cards read the credit ladder in shared/credits.mjs (the same
+// numbers the server sells), so the landing page cannot advertise a package
+// size that the checkout does not grant.
 
 export default function Landing() {
   const { settings: siteSettings } = usePlatform();
@@ -158,11 +128,7 @@ export default function Landing() {
     const t = templates.find((t) => t.id === id)!;
     setProjectKind("webapp");
     setPrompt(t.prompt);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    hero.current?.scrollIntoView({
-      behavior: reduce.matches ? "auto" : "smooth",
-      block: "center",
-    });
+    hero.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     setTimeout(() => document.getElementById("hero-prompt")?.focus(), 300);
   };
   const categories = [
@@ -179,54 +145,6 @@ export default function Landing() {
       : category === "Lainnya"
         ? templates.slice(4)
         : templates.filter((t) => t.category === category);
-  const suggestions =
-    projectKind === "roblox"
-      ? [
-          {
-            label: "Obby",
-            text: "Buat game Roblox obby dengan checkpoint dan sistem respawn yang divalidasi server.",
-          },
-          {
-            label: "Dunia 3D",
-            text: "Rancang map Roblox berupa pulau dengan jalur, spawn, dan objek interaktif.",
-          },
-          {
-            label: "Arena",
-            text: "Susun game arena Roblox dengan sistem ronde dan skor server.",
-          },
-          {
-            label: "Roleplay",
-            text: "Buat struktur game Roblox roleplay dengan sistem pekerjaan.",
-          },
-        ]
-      : projectKind === "mobile"
-        ? [
-            {
-              label: "Catatan",
-              text: "Buat aplikasi Expo untuk menulis dan mengelola catatan.",
-            },
-            {
-              label: "Katalog",
-              text: "Buat aplikasi mobile Expo katalog produk dengan pencarian.",
-            },
-            {
-              label: "Kebiasaan",
-              text: "Buat aplikasi Expo pelacak kebiasaan harian.",
-            },
-            {
-              label: "Komunitas",
-              text: "Rancang aplikasi Expo untuk komunitas dan agenda kegiatan.",
-            },
-          ]
-        : [
-            {
-              label: "Website bisnis",
-              text: "Buat website bisnis kreatif yang profesional dengan profil, layanan, dan kontak.",
-            },
-            { label: "Dashboard", text: templates[1].prompt },
-            { label: "Toko online", text: templates[2].prompt },
-            { label: "Portfolio", text: templates[3].prompt },
-          ];
   return (
     <div className="landing">
       <div className="landing-progress" aria-hidden="true" />
@@ -245,40 +163,44 @@ export default function Landing() {
             </a>
           </div>
         )}
-
-        <section className="hero-section">
-          <div className="hero-media" aria-hidden="true">
-            <video
-              className="hero-video"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-            >
-              <source src="/landing/hero/hero.mp4" type="video/mp4" />
-            </video>
-            <div className="hero-scrim" />
-          </div>
+        <section className="hero-section hero-with-video">
+          <HeroVideo />
           <div className="hero-content">
-            <p className="lp-kicker">
-              <span>01</span> Ruang kerja aplikasi
-            </p>
+            <a href="#how-it-works" className="announcement">
+              <span className="new-badge">KENALAN, PIWUAPP</span>
+              <span>Ide besar, mulai dari satu percakapan</span>
+              <ArrowUpRight size={13} />
+            </a>
             <h1>
               {siteSettings.hero_title || (
                 <>
-                  Bangun aplikasi
+                  Bangun sesuatu
                   <br />
-                  yang benar-benar dipakai.
+                  dengan{" "}
+                  <span className="hero-word">
+                    PiwuApp
+                    <svg viewBox="0 0 325 15" preserveAspectRatio="none">
+                      <path
+                        d="M4 9Q163 -2 320 9M45 14Q190 5 298 12"
+                        pathLength={1}
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        fill="none"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <span className="headline-dot">.</span>
                 </>
               )}
             </h1>
             <p className="hero-subtitle">
               {siteSettings.hero_subtitle || (
                 <>
-                  Tulis kebutuhan Anda dalam bahasa Indonesia. PiwuApp menyusun
-                  rencana, menulis kode, dan menampilkan preview yang bisa
-                  langsung diedit. Ekspor seluruh kode sebagai ZIP kapan saja.
+                  Wujudkan produk baru, alat internal,
+                  <br className="mobile-break" /> atau bahkan seluruh
+                  perusahaan. <br />
+                  Cukup ceritakan idenya. Kita bangun bersama.
                 </>
               )}
             </p>
@@ -304,8 +226,76 @@ export default function Landing() {
               />
             </div>
             <div className="prompt-suggestions">
-              <span>Contoh permintaan</span>
-              {suggestions.map(({ label, text }) => (
+              <span>Mulai dari ide:</span>
+              {(projectKind === "roblox"
+                ? [
+                    {
+                      icon: Layers,
+                      label: "Obby",
+                      text: "Buat game Roblox obby dengan checkpoint dan sistem respawn yang divalidasi server.",
+                    },
+                    {
+                      icon: Globe2,
+                      label: "Dunia 3D",
+                      text: "Rancang map Roblox berupa pulau dengan jalur, spawn, dan objek interaktif.",
+                    },
+                    {
+                      icon: ShieldCheck,
+                      label: "Arena",
+                      text: "Susun game arena Roblox dengan sistem ronde dan skor server.",
+                    },
+                    {
+                      icon: MessageSquare,
+                      label: "Roleplay",
+                      text: "Buat struktur game Roblox roleplay dengan sistem pekerjaan.",
+                    },
+                  ]
+                : projectKind === "mobile"
+                  ? [
+                      {
+                        icon: Code2,
+                        label: "Catatan",
+                        text: "Buat aplikasi Expo untuk menulis dan mengelola catatan.",
+                      },
+                      {
+                        icon: ShoppingBag,
+                        label: "Katalog",
+                        text: "Buat aplikasi mobile Expo katalog produk dengan pencarian.",
+                      },
+                      {
+                        icon: Check,
+                        label: "Kebiasaan",
+                        text: "Buat aplikasi Expo pelacak kebiasaan harian.",
+                      },
+                      {
+                        icon: MessageSquare,
+                        label: "Komunitas",
+                        text: "Rancang aplikasi Expo untuk komunitas dan agenda kegiatan.",
+                      },
+                    ]
+                  : [
+                      {
+                        icon: Globe2,
+                        label: "Website bisnis",
+                        text: "Buat website bisnis kreatif yang profesional dengan profil, layanan, dan kontak.",
+                      },
+                      {
+                        icon: LayoutDashboard,
+                        label: "Dashboard",
+                        text: templates[1].prompt,
+                      },
+                      {
+                        icon: ShoppingBag,
+                        label: "Toko online",
+                        text: templates[2].prompt,
+                      },
+                      {
+                        icon: Palette,
+                        label: "Portfolio",
+                        text: templates[3].prompt,
+                      },
+                    ]
+              ).map(({ icon: Icon, label, text }) => (
                 <button
                   key={label}
                   onClick={() => {
@@ -313,61 +303,53 @@ export default function Landing() {
                     document.getElementById("hero-prompt")?.focus();
                   }}
                 >
+                  <Icon size={13} />
                   {label}
-                  <Plus size={11} aria-hidden="true" />
+                  <Plus size={11} />
                 </button>
               ))}
             </div>
-            <dl className="hero-facts">
-              {heroFacts.map(([term, value]) => (
-                <div key={term}>
-                  <dt>{term}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <ul className="hero-footnote">
-              <li>
-                <Check size={13} aria-hidden="true" /> Mulai gratis
-              </li>
-              <li>
-                <Check size={13} aria-hidden="true" /> Tanpa kartu kredit
-              </li>
-              <li>
-                <Check size={13} aria-hidden="true" /> Kode sepenuhnya milik
-                Anda
-              </li>
-            </ul>
+            <div className="hero-footnote">
+              <span>
+                <Check size={13} /> Mulai gratis
+              </span>
+              <i />
+              <span>
+                <Check size={13} /> Tanpa kartu kredit
+              </span>
+              <i />
+              <span>
+                <Check size={13} /> Kode sepenuhnya milik Anda
+              </span>
+            </div>
           </div>
-          <a className="hero-scroll" href="#templates">
-            Lihat template <ArrowDown size={12} aria-hidden="true" />
-          </a>
-        </section>
-
-        <section className="templates-section section-container" id="templates">
-          <header className="lp-section-head" data-reveal="fade">
+          <div className="hero-bottom">
+            <span>DARI “BAGAIMANA KALAU” JADI “INI HASILNYA”.</span>
             <div>
-              <p className="lp-kicker">
-                <span>02</span> Template
-              </p>
-              <h2>Mulai dari struktur yang sudah jadi.</h2>
+              <span>DIDESAIN UNTUK PARA PEMBUAT</span>
+              <ArrowRight size={14} />
             </div>
-            <div className="lp-section-lead">
-              <p>
-                Template membawa kode sumber yang bisa Anda ubah, bukan gambar
-                mockup. Pilih kategori, buka di workspace, lalu sesuaikan.
-              </p>
-              <Link className="text-link" to="/projects?tab=templates">
-                Jelajahi semua template <ArrowUpRight size={15} />
-              </Link>
+          </div>
+        </section>
+        <section className="templates-section section-container" id="templates">
+          <div className="section-heading" data-reveal="fade">
+            <div>
+              <div className="eyebrow-label">
+                <span /> SEBUAH TITIK AWAL
+              </div>
+              <h2>Tak perlu mulai dari nol.</h2>
+              <p>Sedikit inspirasi untuk ide besar Anda berikutnya.</p>
             </div>
-          </header>
+            <Link className="text-link" to="/projects?tab=templates">
+              Jelajahi semua template <ArrowUpRight size={17} />
+            </Link>
+          </div>
           <div
             className="template-tabs"
             role="tablist"
             aria-label="Kategori template"
             data-reveal="fade"
-            style={revealDelay(80)}
+            style={revealDelay(120)}
           >
             {categories.map((c) => (
               <button
@@ -391,21 +373,12 @@ export default function Landing() {
               <button
                 className="template-card"
                 key={t.id}
-                data-template={t.id}
                 onClick={() => selectTemplate(t.id)}
               >
                 <div className="template-visual" aria-hidden="true">
-                  <img
-                    className="template-thumb"
-                    src={`/landing/templates/${t.id}.webp`}
-                    alt=""
-                    width={560}
-                    height={400}
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <TemplatePreview type={t.id} />
                   <span className="template-use">
-                    Gunakan template <ArrowUpRight size={12} />
+                    Gunakan template <ArrowUpRight size={13} />
                   </span>
                 </div>
                 <div className="template-card-label">
@@ -414,7 +387,7 @@ export default function Landing() {
                     <span>{t.category}</span>
                   </div>
                   <span className="template-arrow">
-                    <ArrowUpRight size={15} aria-hidden="true" />
+                    <ArrowUpRight size={17} />
                   </span>
                 </div>
               </button>
@@ -423,111 +396,216 @@ export default function Landing() {
           <div
             className="template-note"
             data-reveal="fade"
-            style={revealDelay(140)}
+            style={revealDelay(200)}
           >
             <span>
-              <Code2 size={14} aria-hidden="true" /> Setiap template menyertakan
-              kode sumber yang bisa diedit dan diekspor.
+              <Code2 size={14} /> Bukan sekadar mockup. Aplikasi sungguhan,
+              dengan kode yang bisa Anda kembangkan.
             </span>
             <span>
-              {filtered.length} dari {templates.length} template
+              Dibuat dengan PiwuApp <span className="tiny-star">✳</span>
             </span>
           </div>
         </section>
-
         <section className="how-section section-container" id="how-it-works">
-          <header className="lp-section-head" data-reveal="fade">
+          <div className="section-heading" data-reveal="fade">
             <div>
-              <p className="lp-kicker">
-                <span>03</span> Alur kerja
-              </p>
-              <h2>Tiga langkah, satu alur.</h2>
+              <div className="eyebrow-label">
+                <span /> DARI PIKIRAN KE LAYAR
+              </div>
+              <h2>Sesederhana bercerita.</h2>
             </div>
-            <div className="lp-section-lead">
-              <p>
-                Tidak ada langkah tersembunyi. Setiap perubahan file bisa
-                ditinjau sebelum diterapkan, dan setiap versi bisa dipulihkan.
-              </p>
-            </div>
-          </header>
+            <p>
+              Tidak perlu menunggu tim besar.
+              <br />
+              Mulai dengan satu ide, hari ini.
+            </p>
+          </div>
           <div className="steps-grid" data-reveal data-stagger>
-            {steps.map((step, index) => (
-              <article key={step.title}>
-                <span className="step-index">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-                <span className="step-detail">{step.detail}</span>
-              </article>
-            ))}
+            <article>
+              <div className="step-top">
+                <span>01</span>
+                <MessageSquare size={21} />
+              </div>
+              <h3>Ceritakan ide Anda</h3>
+              <p>
+                Aplikasi seperti apa yang Anda bayangkan? Tulis dengan bahasa
+                sendiri, atau mulai dari template.
+              </p>
+              <div className="step-example">
+                <span className="mini-user">A</span>“Buat toko online untuk
+                brand kopi saya…”
+              </div>
+            </article>
+            <article>
+              <div className="step-top">
+                <span>02</span>
+                <Layers size={21} />
+              </div>
+              <h3>Bangun bersama AI</h3>
+              <p>
+                Lihat ide menjadi nyata. Diskusikan rencana, ubah detail, dan
+                sempurnakan langsung di workspace.
+              </p>
+              <div className="step-example code-example">
+                <Check size={14} />
+                <code>src/App.tsx</code>
+                <span>Selesai</span>
+              </div>
+            </article>
+            <article>
+              <div className="step-top">
+                <span>03</span>
+                <ArrowUpRight size={23} />
+              </div>
+              <h3>Siap bertemu dunia</h3>
+              <p>
+                Tinjau hasilnya di berbagai perangkat, lalu unduh kode ZIP dan
+                jalankan di hosting pilihan Anda sendiri.
+              </p>
+              <div className="step-example">
+                <Download size={15} />
+                <span>project-anda.zip</span>
+                <span className="coming-tag">Siap</span>
+              </div>
+            </article>
           </div>
         </section>
-
         <section className="features-section" id="features">
           <div className="section-container">
-            <header className="lp-section-head" data-reveal="fade">
+            <div className="section-heading" data-reveal="fade">
               <div>
-                <p className="lp-kicker">
-                  <span>04</span> Workspace
-                </p>
-                <h2>Semua bagian project terlihat.</h2>
+                <div className="eyebrow-label">
+                  <span /> SATU RUANG. SEMUA KEMUNGKINAN.
+                </div>
+                <h2>
+                  Anda punya visi.
+                  <br />
+                  Kami siapkan ruangnya.
+                </h2>
               </div>
-              <div className="lp-section-lead">
-                <p>
-                  File, preview, dan status penyimpanan berada di satu layar.
-                  Tidak ada panel yang disembunyikan di balik menu lain.
-                </p>
-              </div>
-            </header>
+              <p>
+                Dari percakapan pertama sampai baris kode terakhir,
+                <br />
+                semuanya di satu tempat yang terasa familier.
+              </p>
+            </div>
             <div className="feature-layout" data-reveal>
-              <div className="feature-copy">
-                {features.map((feature) => (
-                  <article key={feature.title}>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.text}</p>
+              <div className="workspace-illustration" aria-hidden="true">
+                <div className="illustration-bar">
+                  <div className="window-dots">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                  <span>Project luar biasa Anda</span>
+                  <span>↗</span>
+                </div>
+                <div className="illustration-body">
+                  <aside>
+                    <Code2 size={16} />
+                    <Layers size={16} />
+                    <Globe2 size={16} />
+                  </aside>
+                  <div className="illustration-code">
+                    <div>
+                      <span className="blue-text">&lt;IdeAnda</span>
+                    </div>
+                    <div>
+                      &nbsp; inspirasi=
+                      <span className="green-text">"tanpa batas"</span>
+                    </div>
+                    <div>
+                      &nbsp; dibuat=
+                      <span className="green-text">"bersama PiwuApp"</span>
+                    </div>
+                    <div>
+                      <span className="blue-text">/&gt;</span>
+                    </div>
+                    <div className="illustration-preview">
+                      <span>Halo, dunia.</span>
+                      <div />
+                      <small>INI BARU PERMULAAN ↗</small>
+                    </div>
+                  </div>
+                  <div className="illustration-chat">
+                    <span className="ai-badge">✳</span>
+                    <p>
+                      Mari wujudkan
+                      <br />
+                      ide Anda.
+                    </p>
+                    <div className="skeleton-line" />
+                    <div className="skeleton-line short" />
+                    <div className="illustration-success">
+                      <Check size={12} /> Preview siap
+                    </div>
+                    <div className="fake-input">
+                      Apa selanjutnya? <ArrowRight size={12} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="feature-list" data-reveal data-stagger>
+                {[
+                  {
+                    icon: MessageSquare,
+                    title: "Percakapan yang jadi karya",
+                    text: "Bangun, rencanakan, atau tanya tentang kode. Pilih cara kerja yang paling cocok untuk Anda.",
+                  },
+                  {
+                    icon: Code2,
+                    title: "Kontrol penuh, tanpa batasan",
+                    text: "Edit kode langsung, lihat preview secara instan, dan pulihkan versi sebelumnya kapan saja.",
+                  },
+                  {
+                    icon: MousePointer2,
+                    title: "Detail kecil, perubahan besar",
+                    text: "Pilih elemen di canvas dan sesuaikan tampilannya tanpa kehilangan konteks.",
+                  },
+                  {
+                    icon: ShieldCheck,
+                    title: "Project Anda, tetap milik Anda",
+                    text: "Ekspor kode kapan saja. Dengan arsitektur yang memisahkan data dan akses setiap project.",
+                  },
+                ].map(({ icon: Icon, title, text }) => (
+                  <article key={title}>
+                    <span className="feature-icon">
+                      <Icon size={19} />
+                    </span>
+                    <div>
+                      <h3>{title}</h3>
+                      <p>{text}</p>
+                    </div>
                   </article>
                 ))}
               </div>
-              <figure className="feature-shot">
-                <img
-                  src="/landing/workspace.webp"
-                  alt="Workspace PiwuApp menampilkan daftar file, preview aplikasi, dan status penyimpanan."
-                  width={1400}
-                  height={858}
-                  loading="lazy"
-                />
-                <figcaption>
-                  Workspace PiwuApp: file project, preview, dan status
-                  sinkronisasi.
-                </figcaption>
-              </figure>
             </div>
           </div>
         </section>
-
         <section className="pricing-section section-container" id="pricing">
-          <header className="lp-section-head" data-reveal="fade">
-            <div>
-              <p className="lp-kicker">
-                <span>05</span> Harga
-              </p>
-              <h2>Harga dan kredit.</h2>
+          <div className="pricing-heading" data-reveal="fade">
+            <div className="eyebrow-label">
+              <span /> RUANG UNTUK BERTUMBUH
             </div>
-            <div className="lp-section-lead">
-              <p>
-                Paket menentukan jumlah kredit, bukan fitur. Semua paket memakai
-                builder, template, editor, dan Export ZIP yang sama.
-              </p>
-            </div>
-          </header>
+            <h2>Mulai kecil. Bermimpi besar.</h2>
+            <p>
+              Pilih ruang yang tepat untuk perjalanan Anda. Semua paket memakai
+              builder, template, AI, dan kolaborasi yang sama — yang berbeda
+              adalah harga dan jumlah kreditnya.
+            </p>
+          </div>
           <div className="pricing-grid" data-reveal data-stagger>
             {planCards.map((p, i) => (
               <article
                 key={p.name}
                 className={"pricing-card " + (i === 1 ? "featured" : "")}
               >
-                {i === 1 && <span className="popular-label">Rekomendasi</span>}
+                {i === 1 && (
+                  <span className="popular-label">
+                    UNTUK IDE YANG LEBIH BESAR <Sparkles size={11} />
+                  </span>
+                )}
                 <h3>{p.name}</h3>
                 <p>{p.desc}</p>
                 <div className="price">
@@ -559,7 +637,7 @@ export default function Landing() {
                 <div className="price-divider" />
                 {p.features.map((f) => (
                   <div className="price-feature" key={f}>
-                    <Check size={14} aria-hidden="true" />
+                    <Check size={14} />
                     {f}
                   </div>
                 ))}
@@ -572,105 +650,86 @@ export default function Landing() {
             ))}
           </div>
           <p className="pricing-note">
-            Harga di atas berlaku 30 hari, dan tidak ada fitur yang dikunci per
-            paket. Jatah harian direset setiap hari pukul 00:00 UTC dan tidak
-            menumpuk; kredit paket {expiryLabel(CREDIT_EXPIRY_MONTHS.plan)},
-            kredit top-up berlaku {CREDIT_EXPIRY_MONTHS.topup} bulan. Perkiraan
-            durasi dihitung dari biaya nyata per operasi ({costLine()}), jadi
-            angkanya aritmetika, bukan janji.
+            Harga di atas berlaku 30 hari. Semua paket membuka builder yang
+            sama: tidak ada fitur yang dikunci per paket. Jatah harian direset
+            setiap hari pukul 00:00 UTC dan tidak menumpuk; kredit paket{" "}
+            {expiryLabel(CREDIT_EXPIRY_MONTHS.plan)}, kredit top-up berlaku{" "}
+            {CREDIT_EXPIRY_MONTHS.topup} bulan. Perkiraan durasi di atas
+            dihitung dari biaya nyata per operasi ({costLine()}), jadi angkanya
+            aritmetika, bukan janji.
           </p>
         </section>
-
         <section
           className="security-strip section-container"
           id="security"
           data-reveal="fade"
         >
-          <ShieldCheck size={24} aria-hidden="true" />
+          <ShieldCheck size={29} />
           <div>
-            <h3>Keamanan dan kepemilikan kode.</h3>
+            <h3>Ide Anda berharga. Begitu juga data Anda.</h3>
             <p>
-              Preview berjalan di sandbox terisolasi. Project cloud memakai
-              konfigurasi akses berbasis peran, dan seluruh kode tetap bisa Anda
-              ekspor.
+              Preview terisolasi, kode milik Anda, dan konfigurasi akses
+              berbasis peran untuk project cloud.
             </p>
           </div>
           <button
             className="text-link"
             onClick={() => setModal("Keamanan & privasi")}
           >
-            Tentang keamanan <ArrowUpRight size={15} />
+            Tentang keamanan <ArrowUpRight size={16} />
           </button>
         </section>
-
         <section className="faq-section section-container" id="faq">
-          <div className="faq-intro" data-reveal="fade">
-            <p className="lp-kicker">
-              <span>06</span> FAQ
-            </p>
-            <h2>Pertanyaan umum</h2>
+          <div data-reveal="fade">
+            <div className="eyebrow-label">
+              <span /> SEBELUM ANDA MULAI
+            </div>
+            <h2>
+              Ada pertanyaan?
+              <br />
+              Wajar, kok.
+            </h2>
             <p>
-              Jawaban singkat tentang akun, kode, dan apa yang tersedia pada
-              versi ini.
+              Beberapa hal yang mungkin
+              <br />
+              sedang Anda pikirkan.
             </p>
           </div>
           <div className="faq-list" data-reveal="fade" data-stagger>
             {faqs.map(([q, a], i) => (
               <article key={q} className={faq === i ? "expanded" : ""}>
-                <h3>
-                  <button
-                    id={`faq-question-${i}`}
-                    aria-expanded={faq === i}
-                    aria-controls={`faq-answer-${i}`}
-                    onClick={() => setFaq(faq === i ? null : i)}
-                  >
-                    {q}
-                    {faq === i ? (
-                      <Minus size={16} aria-hidden="true" />
-                    ) : (
-                      <Plus size={16} aria-hidden="true" />
-                    )}
-                  </button>
-                </h3>
-                <div
-                  id={`faq-answer-${i}`}
-                  role="region"
-                  aria-labelledby={`faq-question-${i}`}
-                  hidden={faq !== i}
+                <button
+                  aria-expanded={faq === i}
+                  onClick={() => setFaq(faq === i ? null : i)}
                 >
-                  <p>{a}</p>
-                </div>
+                  {q}
+                  {faq === i ? <Minus size={16} /> : <Plus size={16} />}
+                </button>
+                {faq === i && <p>{a}</p>}
               </article>
             ))}
           </div>
         </section>
-
         <section className="cta-section">
-          <div className="cta-inner section-container">
-            <div>
-              <p className="lp-kicker">
-                <span>07</span> Mulai
-              </p>
-              <h2>Mulai dari project pertama.</h2>
-              <p className="cta-note">
-                Gratis untuk {creditHeadline(ladder("Free"))}. Tanpa kartu
-                kredit.
-              </p>
-            </div>
-            <Link to="/login" className="cta-button">
-              Buat project <ArrowUpRight size={16} aria-hidden="true" />
-            </Link>
+          <div className="eyebrow-label">
+            IDE ITU SUDAH CUKUP LAMA DI KEPALA.
           </div>
+          <h2>Sekarang, buat jadi nyata.</h2>
+          <Link to="/login" className="button button-dark">
+            Bangun ide pertama Anda <ArrowUpRight size={16} />
+          </Link>
+          <p>Mulai gratis. Tidak perlu sempurna untuk memulai.</p>
+          <span className="cta-doodle">✳</span>
         </section>
       </main>
-
       <footer className="site-footer section-container">
         <div className="footer-top" data-reveal="fade">
           <div>
             <Logo />
             <p>
-              Ruang kerja untuk membuat aplikasi. Bahasa Indonesia, kode tetap
-              milik Anda.
+              Ruang untuk ide.
+              <br />
+              Tempat untuk mewujudkannya.
             </p>
           </div>
           <div>
@@ -703,26 +762,33 @@ export default function Landing() {
         <div
           className="footer-bottom"
           data-reveal="fade"
-          style={revealDelay(120)}
+          style={revealDelay(140)}
         >
-          <span>© {new Date().getFullYear()} PiwuApp</span>
           <span>
-            <Globe2 size={13} aria-hidden="true" /> Bahasa Indonesia
+            © {new Date().getFullYear()} PiwuApp. Dibuat untuk mewujudkan ide.
+          </span>
+          <span>
+            Dari Indonesia, untuk semua <Heart size={12} />
+            <span className="language-label">
+              <Globe2 size={13} /> Bahasa Indonesia
+            </span>
           </span>
         </div>
       </footer>
-
       {modal && (
         <Modal title={modal} onClose={() => setModal("")}>
           <div className="modal-content">
+            <span className="modal-feature-icon">
+              <Sparkles size={24} />
+            </span>
             <h3>
               {modal.includes("Paket")
-                ? "Paket dan pembayaran."
+                ? "Bertumbuh bersama PiwuApp."
                 : modal.includes("Keamanan")
-                  ? "Keamanan dan privasi."
+                  ? "Transparan sejak awal."
                   : modal.includes("Komunitas")
-                    ? "Komunitas PiwuApp."
-                    : "Tentang PiwuApp."}
+                    ? "Ruang untuk para pembuat."
+                    : "Dari ide, jadi nyata."}
             </h3>
             <p>
               {modal.includes("Paket")
