@@ -11,24 +11,20 @@ import {
   Globe,
   Layers,
   LayoutDashboard,
-  Menu,
-  Search,
   ShieldCheck,
   Sparkles,
-  X,
   Zap,
   AlertTriangle,
   Check,
   Copy,
-  Smartphone,
-  Gamepad2,
   Download,
   History,
   Users,
   Terminal,
   Lock,
+  Search,
 } from "lucide-react";
-import { Logo } from "../components/ui";
+import { DocsHeader } from "../components/docs/DocsNav";
 import "./docs.css";
 
 const toc = [
@@ -79,31 +75,6 @@ const toc = [
   },
 ];
 
-function DocsHeader({ active }: { active: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <header className="docs-header">
-      <div className="docs-header-inner">
-        <Link to="/" aria-label="PiwuApp beranda">
-          <Logo />
-        </Link>
-        <nav className={`docs-nav ${open ? "is-open" : ""}`} aria-label="Navigasi docs">
-          <Link to="/dokumentasi" className={active === "dokumentasi" ? "is-active" : ""} onClick={() => setOpen(false)}>Dokumentasi</Link>
-          <Link to="/panduan" className={active === "panduan" ? "is-active" : ""} onClick={() => setOpen(false)}>Panduan</Link>
-          <Link to="/aturan" className={active === "aturan" ? "is-active" : ""} onClick={() => setOpen(false)}>Aturan</Link>
-          <Link to="/#pricing" onClick={() => setOpen(false)}>Harga</Link>
-        </nav>
-        <div className="docs-header-actions">
-          <Link to="/projects" className="docs-cta">Buka workspace <ArrowUpRight size={14} /></Link>
-          <button className="docs-mobile-toggle" aria-label={open ? "Tutup menu" : "Buka menu"} onClick={() => setOpen(!open)}>
-            {open ? <X size={18} /> : <Menu size={18} />}
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
-
 function useActiveSection(ids: string[]) {
   const [active, setActive] = useState(ids[0]);
   useEffect(() => {
@@ -140,7 +111,13 @@ export default function Dokumentasi() {
 
       <div className="docs-hero">
         <div className="docs-hero-inner">
-          <div className="docs-eyebrow"><i /> Dokumentasi <span style={{ color: "#9aa09a" }}>·</span> v0.1.0 · 18 Okt 2026</div>
+          <nav aria-label="Breadcrumb" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#8a8d85", marginBottom: 14 }}>
+            <Link to="/" style={{ color: "#5a6258", textDecoration: "none" }}>Beranda</Link>
+            <span style={{ color: "#c2c5bc" }}>›</span>
+            <span style={{ color: "var(--docs-ink)", fontWeight: 500 }}>Dokumentasi</span>
+            <span style={{ marginLeft: 8, padding: "2px 7px", borderRadius: 99, background: "#fff", border: "1px solid var(--docs-line)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", color: "#6b7068" }}>v1.0 · 18 OKT 2026</span>
+          </nav>
+          <div className="docs-eyebrow"><i /> Dokumentasi — Referensi lengkap</div>
           <h1>Dokumentasi <em>PiwuApp</em> — dari ide sampai kode yang Anda miliki.</h1>
           <p className="docs-hero-lead">
             PiwuApp adalah workspace berbasis percakapan untuk mengubah deskripsi menjadi aplikasi web, mobile (Expo), atau game Roblox. Satu tempat untuk merencanakan, menulis kode, melihat preview, dan mengekspor hasil — tanpa mengunci kode Anda.
@@ -151,9 +128,9 @@ export default function Dokumentasi() {
             <span className="docs-meta-pill"><Code2 size={13} /> React 19 · Vite · Supabase RLS</span>
           </div>
           <div className="docs-quick">
-            <Link to="#cara-kerja"><span className="docs-quick-icon"><Zap size={16} /></span><span><b>Mulai 5 menit</b><span>Buat project pertama tanpa setup</span></span></Link>
-            <Link to="#biaya-kredit"><span className="docs-quick-icon"><CreditCard size={16} /></span><span><b>Kredit & paket</b><span>Biaya nyata per operasi, bukan tebak-tebakan</span></span></Link>
-            <Link to="#keamanan-doc"><span className="docs-quick-icon"><Lock size={16} /></span><span><b>Keamanan</b><span>Isolasi preview, RLS, dan ekspor ZIP</span></span></Link>
+            <a href="#cara-kerja"><span className="docs-quick-icon"><Zap size={16} /></span><span><b>Mulai 5 menit</b><span>Buat project pertama tanpa setup</span></span></a>
+            <a href="#biaya-kredit"><span className="docs-quick-icon"><CreditCard size={16} /></span><span><b>Kredit & paket</b><span>Biaya nyata per operasi, bukan tebak-tebakan</span></span></a>
+            <a href="#keamanan-doc"><span className="docs-quick-icon"><Lock size={16} /></span><span><b>Keamanan</b><span>Isolasi preview, RLS, dan ekspor ZIP</span></span></a>
           </div>
         </div>
       </div>
@@ -422,9 +399,17 @@ export const CREDIT_COSTS = {
             <p>Untuk audit keamanan lengkap, lihat <code>docs/SECURITY.md</code> di repository.</p>
           </section>
 
-          <div className="docs-callout docs-callout--info" style={{ marginTop: 32 }}>
-            <span className="docs-callout-icon"><BookOpen size={14} /></span>
-            <div><b>Lanjut baca</b><p><Link to="/panduan">Panduan langkah-demi-langkah</Link> untuk membuat project pertama dalam 5 menit, atau <Link to="/aturan">Aturan penggunaan</Link> untuk hak, pembayaran, dan komunitas.</p></div>
+          <div className="docs-pager">
+            <Link to="/panduan">
+              <span>‹ Sebelumnya</span>
+              <b>Panduan</b>
+              <p>Langkah-demi-langkah sampai publish</p>
+            </Link>
+            <Link to="/aturan">
+              <span>Selanjutnya ›</span>
+              <b>Aturan & ketentuan</b>
+              <p>Hak, pembayaran, dan komunitas</p>
+            </Link>
           </div>
         </article>
 

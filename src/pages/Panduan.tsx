@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowUpRight, BookOpen, Check, ClipboardCheck, Clock, Code2, Compass, Copy, Download, FileText, Globe, Layers, Menu, MessageSquare, Monitor, PenTool, Play, Search, ShieldCheck, Terminal, Wrench, X, Zap, AlertTriangle, History, Eye, Package, Gamepad
+  ArrowUpRight, BookOpen, Check, ClipboardCheck, Clock, Code2, Compass, Copy, Download, FileText, Globe, Layers, MessageSquare, Monitor, PenTool, Play, Search, ShieldCheck, Terminal, Wrench, Zap, AlertTriangle, History, Eye, Package, Gamepad
 } from "lucide-react";
-import { Logo } from "../components/ui";
+import { DocsHeader } from "../components/docs/DocsNav";
 import "./docs.css";
 
 const toc = [
@@ -35,26 +35,6 @@ const toc = [
   ]},
 ];
 
-function DocsHeader({ active }: { active: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <header className="docs-header">
-      <div className="docs-header-inner">
-        <Link to="/" aria-label="PiwuApp beranda"><Logo /></Link>
-        <nav className={`docs-nav ${open ? "is-open" : ""}`} aria-label="Navigasi docs">
-          <Link to="/dokumentasi" className={active === "dokumentasi" ? "is-active" : ""} onClick={() => setOpen(false)}>Dokumentasi</Link>
-          <Link to="/panduan" className={active === "panduan" ? "is-active" : ""} onClick={() => setOpen(false)}>Panduan</Link>
-          <Link to="/aturan" className={active === "aturan" ? "is-active" : ""} onClick={() => setOpen(false)}>Aturan</Link>
-          <Link to="/#pricing" onClick={() => setOpen(false)}>Harga</Link>
-        </nav>
-        <div className="docs-header-actions">
-          <Link to="/projects" className="docs-cta">Buka workspace <ArrowUpRight size={14} /></Link>
-          <button className="docs-mobile-toggle" aria-label={open ? "Tutup" : "Buka"} onClick={() => setOpen(!open)}>{open ? <X size={18} /> : <Menu size={18} />}</button>
-        </div>
-      </div>
-    </header>
-  );
-}
 function useActiveSection(ids: string[]) {
   const [active, setActive] = useState(ids[0]);
   useEffect(() => {
@@ -77,7 +57,13 @@ export default function Panduan() {
 
       <div className="docs-hero">
         <div className="docs-hero-inner">
-          <div className="docs-eyebrow"><i /> Panduan <span style={{ color: "#9aa09a" }}>·</span> Langkah-demi-langkah</div>
+          <nav aria-label="Breadcrumb" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#8a8d85", marginBottom: 14 }}>
+            <Link to="/" style={{ color: "#5a6258", textDecoration: "none" }}>Beranda</Link>
+            <span style={{ color: "#c2c5bc" }}>›</span>
+            <span style={{ color: "var(--docs-ink)", fontWeight: 500 }}>Panduan</span>
+            <span style={{ marginLeft: 8, padding: "2px 7px", borderRadius: 99, background: "#fff", border: "1px solid var(--docs-line)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", color: "#6b7068" }}>5 MENIT · PEMULA</span>
+          </nav>
+          <div className="docs-eyebrow"><i /> Panduan — Langkah-demi-langkah</div>
           <h1>Panduan <em>PiwuApp</em> — dari nol sampai publish, tanpa tebak-tebakan.</h1>
           <p className="docs-hero-lead">Ikuti langkah nyata, bukan janji. Setiap bagian menjelaskan apa yang terjadi, berapa kredit yang terpakai, dan apa yang bisa salah — jadi Anda tidak buang waktu mengulang.</p>
           <div className="docs-hero-meta">
@@ -86,9 +72,9 @@ export default function Panduan() {
             <span className="docs-meta-pill"><Code2 size={13} /> Bahasa Indonesia</span>
           </div>
           <div className="docs-quick">
-            <Link to="#project-pertama"><span className="docs-quick-icon"><Play size={16} /></span><span><b>Buat project pertama</b><span>Template → prompt → preview</span></span></Link>
-            <Link to="#mode-riset"><span className="docs-quick-icon"><Search size={16} /></span><span><b>Riset berbantuan AI</b><span>Cari sumber, kutip otomatis</span></span></Link>
-            <Link to="#ekspor-hosting"><span className="docs-quick-icon"><Download size={16} /></span><span><b>Ekspor & hosting</b><span>ZIP keluar, deploy di tempat Anda</span></span></Link>
+            <a href="#project-pertama"><span className="docs-quick-icon"><Play size={16} /></span><span><b>Buat project pertama</b><span>Template → prompt → preview</span></span></a>
+            <a href="#mode-riset"><span className="docs-quick-icon"><Search size={16} /></span><span><b>Riset berbantuan AI</b><span>Cari sumber, kutip otomatis</span></span></a>
+            <a href="#ekspor-hosting"><span className="docs-quick-icon"><Download size={16} /></span><span><b>Ekspor & hosting</b><span>ZIP keluar, deploy di tempat Anda</span></span></a>
           </div>
         </div>
       </div>
@@ -356,9 +342,17 @@ vercel --prod   # ikuti prompt, pilih dist/ sebagai output`}</code></pre>
             </div>
           </section>
 
-          <div className="docs-callout docs-callout--info" style={{ marginTop: 32 }}>
-            <span className="docs-callout-icon"><Compass size={14} /></span>
-            <div><b>Selanjutnya</b><p>Baca <Link to="/dokumentasi">Dokumentasi lengkap</Link> untuk arsitektur & biaya, atau <Link to="/aturan">Aturan penggunaan</Link> sebelum publish.</p></div>
+          <div className="docs-pager">
+            <Link to="/dokumentasi">
+              <span>‹ Sebelumnya</span>
+              <b>Dokumentasi</b>
+              <p>Referensi lengkap & biaya</p>
+            </Link>
+            <Link to="/aturan">
+              <span>Selanjutnya ›</span>
+              <b>Aturan & ketentuan</b>
+              <p>Hak, pembayaran, dan komunitas</p>
+            </Link>
           </div>
         </article>
 

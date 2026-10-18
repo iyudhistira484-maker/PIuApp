@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowUpRight, AlertTriangle, BadgeCheck, Ban, BookOpen, Check, Copy, CreditCard, FileText, Globe, Handshake, Heart, Info, Landmark, Lock, Mail, Menu, Scale, ShieldCheck, Users, X, Building, EyeOff, MessageSquare, FileWarning, Briefcase, UserX
+  ArrowUpRight, AlertTriangle, BadgeCheck, Ban, BookOpen, CreditCard, FileText, Globe, Heart, Info, Lock, Mail, Scale, ShieldCheck, Building, EyeOff, MessageSquare, FileWarning, Briefcase, Users
 } from "lucide-react";
-import { Logo } from "../components/ui";
+import { DocsHeader } from "../components/docs/DocsNav";
 import "./docs.css";
 
 const toc = [
@@ -35,26 +35,6 @@ const toc = [
   ]},
 ];
 
-function DocsHeader({ active }: { active: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <header className="docs-header">
-      <div className="docs-header-inner">
-        <Link to="/" aria-label="PiwuApp beranda"><Logo /></Link>
-        <nav className={`docs-nav ${open ? "is-open" : ""}`} aria-label="Navigasi docs">
-          <Link to="/dokumentasi" className={active === "dokumentasi" ? "is-active" : ""} onClick={() => setOpen(false)}>Dokumentasi</Link>
-          <Link to="/panduan" className={active === "panduan" ? "is-active" : ""} onClick={() => setOpen(false)}>Panduan</Link>
-          <Link to="/aturan" className={active === "aturan" ? "is-active" : ""} onClick={() => setOpen(false)}>Aturan</Link>
-          <Link to="/#pricing" onClick={() => setOpen(false)}>Harga</Link>
-        </nav>
-        <div className="docs-header-actions">
-          <Link to="/projects" className="docs-cta">Buka workspace <ArrowUpRight size={14} /></Link>
-          <button className="docs-mobile-toggle" aria-label={open ? "Tutup" : "Buka"} onClick={() => setOpen(!open)}>{open ? <X size={18} /> : <Menu size={18} />}</button>
-        </div>
-      </div>
-    </header>
-  );
-}
 function useActiveSection(ids: string[]) {
   const [active, setActive] = useState(ids[0]);
   useEffect(() => {
@@ -75,7 +55,13 @@ export default function Aturan() {
 
       <div className="docs-hero">
         <div className="docs-hero-inner">
-          <div className="docs-eyebrow"><i /> Aturan & ketentuan <span style={{ color: "#9aa09a" }}>·</span> Berlaku 18 Okt 2026</div>
+          <nav aria-label="Breadcrumb" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#8a8d85", marginBottom: 14 }}>
+            <Link to="/" style={{ color: "#5a6258", textDecoration: "none" }}>Beranda</Link>
+            <span style={{ color: "#c2c5bc" }}>›</span>
+            <span style={{ color: "var(--docs-ink)", fontWeight: 500 }}>Aturan</span>
+            <span style={{ marginLeft: 8, padding: "2px 7px", borderRadius: 99, background: "#fff", border: "1px solid var(--docs-line)", fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", color: "#6b7068" }}>v1.2 · 18 OKT 2026</span>
+          </nav>
+          <div className="docs-eyebrow"><i /> Aturan & ketentuan — Berlaku 18 Okt 2026</div>
           <h1>Aturan <em>PiwuApp</em> — jelas, adil, dan tidak berbelit.</h1>
           <p className="docs-hero-lead">
             Dokumen ini mengikat penggunaan PiwuApp. Kami tulis dengan bahasa yang bisa dipahami — tanpa pasal karet. Jika ada konflik antara ringkasan dan ketentuan lengkap, ketentuan lengkap yang berlaku.
@@ -370,9 +356,17 @@ export default function Aturan() {
             <p style={{ marginTop: 16, fontSize: 12, color: "#8a8d85" }}>Alamat surat tercatat akan ditambahkan saat entitas hukum final. Sementara, korespondensi via email adalah saluran resmi.</p>
           </section>
 
-          <div className="docs-callout docs-callout--info" style={{ marginTop: 32 }}>
-            <span className="docs-callout-icon"><Info size={14} /></span>
-            <div><b>Butuh versi cetak?</b><p>Halaman ini bisa dicetak (Ctrl+P) — navigasi otomatis disembunyikan. Untuk pertanyaan hukum spesifik, konsultasikan penasihat hukum Anda.</p></div>
+          <div className="docs-pager">
+            <Link to="/panduan">
+              <span>‹ Sebelumnya</span>
+              <b>Panduan</b>
+              <p>Langkah-demi-langkah sampai publish</p>
+            </Link>
+            <Link to="/dokumentasi">
+              <span>Selanjutnya ›</span>
+              <b>Dokumentasi</b>
+              <p>Referensi lengkap & biaya</p>
+            </Link>
           </div>
         </article>
 
