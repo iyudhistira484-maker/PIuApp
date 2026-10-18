@@ -4,6 +4,7 @@ import LandingNav from "../components/landing/LandingNav";
 import HeroVideo from "../components/landing/HeroVideo";
 import "../components/landing/landing-responsive.css";
 import "../components/landing/landing-motion.css";
+import "../components/landing/landing-pricing.css";
 import useLandingMotion, {
   revealDelay,
 } from "../components/landing/useLandingMotion";

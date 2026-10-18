@@ -1,4 +1,5 @@
 /* Isolated landing navigation: no overrides to dashboard/workspace headers. */
+/* cache-bust 2026-10-18: paksakan etag baru setelah restart dev server. */
 .landing-header {
   position: sticky;
   top: 0;
