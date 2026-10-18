@@ -650,15 +650,19 @@ export default function Landing() {
               </article>
             ))}
           </div>
-          <p className="pricing-note">
-            Harga di atas berlaku 30 hari. Semua paket membuka builder yang
-            sama: tidak ada fitur yang dikunci per paket. Jatah harian direset
-            setiap hari pukul 00:00 UTC dan tidak menumpuk; kredit paket{" "}
-            {expiryLabel(CREDIT_EXPIRY_MONTHS.plan)}, kredit top-up berlaku{" "}
-            {CREDIT_EXPIRY_MONTHS.topup} bulan. Perkiraan durasi di atas
-            dihitung dari biaya nyata per operasi ({costLine()}), jadi angkanya
-            aritmetika, bukan janji.
-          </p>
+          <div className="pricing-note">
+            <p>
+              Harga di atas berlaku 30 hari. Semua paket membuka builder yang
+              sama: tidak ada fitur yang dikunci per paket. Jatah harian direset
+              setiap hari pukul 00:00 UTC dan tidak menumpuk; kredit paket{" "}
+              {expiryLabel(CREDIT_EXPIRY_MONTHS.plan)}, kredit top-up berlaku{" "}
+              {CREDIT_EXPIRY_MONTHS.topup} bulan.
+            </p>
+            <p>
+              Perkiraan durasi di atas dihitung dari biaya nyata per operasi (
+              {costLine()}), jadi angkanya aritmetika, bukan janji.
+            </p>
+          </div>
         </section>
         <section
           className="security-strip section-container"
