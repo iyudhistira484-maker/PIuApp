@@ -19,23 +19,6 @@
   font-size: 15px;
 }
 
-/* Catatan bawah kartu — dua blok (aturan paket; cara angka dihitung),
-   ukuran terbaca, panjang baris wajar. */
-.landing .pricing-note {
-  max-width: 660px;
-  margin: 26px auto 0;
-  font-size: 13px;
-  line-height: 1.9;
-  text-align: center;
-  color: #647057;
-}
-.landing .pricing-note p {
-  margin: 0 0 8px;
-}
-.landing .pricing-note p:last-child {
-  margin-bottom: 0;
-}
-
 /* Badge "UNTUK IDE YANG LEBIH BESAR" — pill di tengah border atas kartu Pro.
    Bar penuh lebar versi lama terlalu tebal, teks 10px kecil, dan sudut bawah
    bar (lurus) membentuk ceukan putih di atas sudut membulat kartu.
